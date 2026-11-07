@@ -9,7 +9,7 @@
   var CFG = {
     clientId: '1091272801207-bfdmd6hmlda5h8pd14tuak4fdrpvt38j.apps.googleusercontent.com',
     sheetId: '128IXoJWYMU9t1-a-HlqSGfwBe0ZmuKKtkOG6fNfrzUk',
-    scope: 'https://www.googleapis.com/auth/spreadsheets'
+    scope: 'https://www.googleapis.com/auth/spreadsheets openid email'
   };
   var API_BASE = 'https://sheets.googleapis.com/v4/spreadsheets/' + CFG.sheetId;
   var ALF_TAB = 'ALF 2027';
@@ -45,6 +45,11 @@
           localStorage.setItem('abc_tok', JSON.stringify({ token: Auth.token, exp: Auth.exp }));
           localStorage.setItem('abc_consent', '1');
         } catch (e) { /* geen opslag */ }
+        // onthoud het account, zodat opnieuw inloggen zonder account kiezen gaat
+        fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: 'Bearer ' + Auth.token } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (u) { if (u && u.email) { try { localStorage.setItem('abc_hint', u.email); } catch (e) { /* */ } } })
+          .catch(function () {});
         settle(true);
       },
       error_callback: function () { settle(false, new Error('Inloggen afgebroken.')); }
@@ -56,9 +61,11 @@
     return new Promise(function (resolve, reject) {
       if (!initAuth()) { reject(new Error('Google-login is nog aan het laden. Probeer het over een paar seconden opnieuw.')); return; }
       Auth.waiters.push({ resolve: resolve, reject: reject });
-      var consented = false;
-      try { consented = !!localStorage.getItem('abc_consent'); } catch (e) { /* */ }
-      Auth.client.requestAccessToken({ prompt: consented ? '' : 'consent' });
+      var consented = false, hint = '';
+      try { consented = !!localStorage.getItem('abc_consent'); hint = localStorage.getItem('abc_hint') || ''; } catch (e) { /* */ }
+      var opts = { prompt: consented ? '' : 'consent' };
+      if (hint) opts.login_hint = hint;
+      Auth.client.requestAccessToken(opts);
     });
   }
   function signOut() {

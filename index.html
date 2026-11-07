@@ -1129,10 +1129,19 @@ body{padding-top:env(safe-area-inset-top)}
     }, 150);
   });
   function maybeRefresh() {
-    if (!ABC.authValid()) return;
+    if (!ABC.authValid()) { if (DATA && ERR !== 'AUTH') { ERR = 'AUTH'; render(); } return; }
     if (document.hidden || S.panel === 'form' || LOADING) return;
     if (Date.now() - LOADED_AT > 60000) { CACHE = {}; load(true); }
   }
+  // Sessie verlopen? Bij de eerste tik stil opnieuw inloggen (Google-venster sluit vanzelf).
+  var lastAuto = 0;
+  document.addEventListener('pointerdown', function (e) {
+    if (ABC.authValid() || ERR !== 'AUTH' || !DATA || SAVING) return;
+    if (e.target.closest && e.target.closest('[data-act="login"],[data-act="logout"]')) return;
+    if (Date.now() - lastAuto < 30000) return;
+    lastAuto = Date.now();
+    ABC.signIn().then(function () { ERR = null; CACHE = {}; load(true); }, function () {});
+  }, true);
   document.addEventListener('visibilitychange', maybeRefresh);
   window.addEventListener('focus', maybeRefresh);
   setInterval(maybeRefresh, 5 * 60 * 1000);
