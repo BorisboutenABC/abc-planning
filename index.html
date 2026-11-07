@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ABC Planning</title>
+<meta name="theme-color" content="#F4EFE7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ABC Planning">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F4EFE7;--card:#FFFDF9;--ink:#1E1B16;--mut:#6B6257;--mut2:#8A8075;--line:#ECE4D8;--bd:#E2D9CC;--soft:#F6F1E9;--chip:#EFE8DD;--zaza:#1F5E63;--mosi:#C2662D;--none:#B9AFA2;--alf:#5A63B8;--sh:0 1px 2px rgba(60,40,10,.06);--sh2:0 1px 2px rgba(60,40,10,.06),0 8px 24px rgba(60,40,10,.05);--sh3:0 1px 2px rgba(60,40,10,.06),0 12px 32px rgba(60,40,10,.10)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg)}
+body{font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font-family:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--zaza)}a:hover{color:#133E42}
+.sg{font-family:'Space Grotesk',Inter,sans-serif}
+.b{font-weight:700}.m12{font-size:12px;color:var(--mut)}
+.wrap{min-height:100vh;padding:20px 24px 40px}
+.inner{max-width:1500px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.inner.wk{max-width:1400px;gap:20px}
+.card{background:var(--card);border-radius:20px;box-shadow:var(--sh)}
+.logo{width:38px;height:38px;border-radius:12px;background:var(--zaza);color:var(--card);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;flex:none}
+.hdr{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 16px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:10px}
+.brand-t{font-weight:700;font-size:20px}
+.pills{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 auto}
+.pill{border:1px solid var(--bd);border-radius:999px;padding:8px 13px;background:var(--card);color:#3D362D;font-size:13px;font-weight:600}
+.pill.on{background:var(--ink);border-color:var(--ink);color:var(--card)}
+.btn-new{border:0;border-radius:999px;padding:9px 16px;background:var(--mosi);color:var(--card);font-size:13px;font-weight:700}
+.alert{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;border-radius:16px;padding:10px 16px;background:#FBE3DF;color:#8A2A1C;font-size:13px;font-weight:600}
+.alert button{border:0;border-radius:999px;padding:6px 12px;background:var(--card);color:#8A2A1C;font-size:12px;font-weight:700}
+.errbar{border-radius:16px;padding:10px 16px;background:#FDEBD3;color:#7A4508;font-size:13px;font-weight:600;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.errbar button{border:0;border-radius:999px;padding:6px 12px;background:var(--card);color:#7A4508;font-weight:700;font-size:12px}
+.cols{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
+.aside{flex:1 1 220px;max-width:260px;display:flex;flex-direction:column;gap:14px}
+.aside .card{padding:14px}
+.ctitle{font-weight:700;font-size:14px;margin-bottom:10px}
+.legend{display:flex;flex-direction:column;gap:2px}
+.lrow{display:flex;align-items:center;justify-content:space-between;width:calc(100% + 12px);border:0;background:transparent;padding:4px 6px;margin:0 -6px;border-radius:8px;font-size:13px;color:var(--ink);text-align:left}
+.lrow:hover,.lrow.on{background:var(--soft)}
+.lrow .n{color:var(--mut)}
+.lrow span:first-child{display:flex;align-items:center;gap:8px}
+.sw{width:12px;height:12px;border-radius:4px;flex:none}
+.dt{width:8px;height:8px;border-radius:999px;flex:none}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.stat{background:var(--soft);border-radius:12px;padding:8px 10px}
+.stat .l{font-size:11px;color:var(--mut)}.stat .v{font-weight:700;font-size:20px}
+.main{flex:999 1 640px;min-width:0;background:var(--card);border-radius:22px;padding:14px;box-shadow:var(--sh2)}
+.tb{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.tb-l{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tb h2{margin:0 0 0 6px;font-size:24px}
+.rb{border:1px solid var(--bd);border-radius:999px;padding:7px 12px;background:var(--card);font-size:13px;font-weight:600;color:var(--ink)}
+.rnd{width:34px;height:34px;padding:0;font-size:17px;line-height:1}
+.seg{display:flex;background:#F1EBE2;border-radius:999px;padding:3px}
+.seg button{border:0;border-radius:999px;padding:6px 12px;background:transparent;font-size:13px;font-weight:600;color:#4A433A}
+.seg button.on{background:var(--card);font-weight:700;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.loadtxt{font-size:12px;color:var(--mut2)}
+.cal-scroll{overflow-x:auto}
+.cal{min-width:900px}
+.dow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--line)}
+.dow div{padding:6px 8px;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--mut)}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-left:1px solid var(--line)}
+.cell{min-height:112px;padding:6px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0;background:var(--card)}
+.cell.we{background:#FBF6EF}.cell.out{background:#FAF7F2}
+.cell-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.num{font-size:12px;font-weight:700;border:0;background:transparent;padding:1px 4px;margin-left:-4px;border-radius:999px;color:var(--ink)}
+.num:hover{background:var(--soft)}
+.cell.out .num{color:var(--none)}
+.num.today{background:var(--zaza);color:var(--card);padding:1px 7px}
+.cnt{font-size:11px;color:var(--mut2)}
+.cell.in{cursor:pointer}
+.cell.in:hover{background:#F8F3EA}
+.addc{border:0;background:transparent;color:var(--mut2);font-size:16px;line-height:1;padding:0 4px;border-radius:6px;opacity:0}
+.cell:hover .addc,.addc:focus{opacity:1}
+.addc:hover{background:var(--soft);color:var(--ink)}
+.empty .save{margin-top:12px;padding:10px 18px}
+.evs{display:flex;flex-direction:column;gap:3px}
+.ev{display:flex;align-items:center;gap:5px;width:100%;text-align:left;border:1px solid transparent;border-radius:8px;padding:4px 6px;color:var(--ink);font-size:11.5px;min-width:0}
+.ev.on{border-color:var(--ink)}
+.ev .d{width:7px;height:7px;border-radius:999px;flex:none}
+.ev .lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev .w{margin-left:auto;color:#B4531A;font-weight:700}
+.empty{background:var(--soft);border-radius:18px;padding:22px;text-align:center;color:var(--mut);font-size:14px}
+.dlist{display:flex;flex-direction:column;gap:10px;max-width:720px}
+/* trip cards (mobiel / dagweergave) */
+.tcard{display:block;width:100%;text-align:left;border:2px solid transparent;border-radius:18px;padding:14px;background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(60,40,10,.08)}
+.dlist .tcard{background:var(--soft);box-shadow:none}
+.tcard.on{border-color:var(--ink)}
+.tc-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tc-time{font-size:13px;font-weight:700;color:#4A433A}
+.tc-name{font-size:17px;font-weight:700;margin-top:6px}
+.tc-sub{font-size:13px;color:var(--mut);margin-top:2px}
+.flags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.chip{border-radius:999px;padding:3px 8px;font-size:11px;font-weight:600;white-space:nowrap}
+.alfc{display:block;width:100%;text-align:left;border:2px solid transparent;border-radius:18px;padding:14px;background:#EEF0FB;color:#2E3A86}
+.alfc.on{border-color:#2E3A86}
+.alfc-t{display:flex;justify-content:space-between;font-size:14px;font-weight:700}
+.bar{height:8px;border-radius:999px;background:#D9DDF5;margin-top:8px;overflow:hidden}
+.bar div{height:8px;border-radius:999px;background:#2E3A86}
+/* detailpaneel maandagenda */
+.det{flex:1 1 360px;max-width:420px;min-width:300px;background:var(--card);border-radius:22px;overflow:hidden;box-shadow:var(--sh3)}
+.det-h{padding:16px 16px 12px;display:flex;justify-content:space-between;gap:10px}
+.det-t{font-weight:700;font-size:20px}
+.det-m{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}
+.x{border:0;width:36px;height:36px;flex:none;border-radius:999px;background:#EFE8DD;color:var(--ink);font-size:18px}
+.who{display:flex;align-items:center;gap:10px;padding:0 16px 14px}
+.av{width:40px;height:40px;border-radius:12px;background:#E9A06A;color:var(--card);display:flex;align-items:center;justify-content:center;font-weight:700;text-transform:uppercase;flex:none}
+.tri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.tri>div{padding:12px;text-align:center;border-right:1px solid var(--line)}.tri>div:last-child{border-right:0}
+.tv{font-weight:700;font-size:18px}.tl{font-size:10px;letter-spacing:.08em;color:var(--mut)}
+.det-b{background:var(--soft);padding:12px;display:flex;flex-direction:column;gap:10px}
+.box{border-radius:16px;padding:14px}
+.box.blue{background:#E7EEF9}.box.white{background:var(--card)}
+.box.cat{background:#FDEEDF;border:1px solid #F3D3B5}
+.box.warnb{background:#FDEBD3;color:#7A4508;font-size:13px;font-weight:600}
+.bh{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--mut);margin-bottom:8px}
+.blue .bh{color:#3B4B7A}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;font-size:13px}
+.kl{font-size:10px;letter-spacing:.06em;color:var(--mut)}.blue .kl{color:#5A6380}
+.kv{font-weight:600;word-break:break-word}
+.notes{font-size:13px;line-height:1.5;margin-top:10px;white-space:pre-wrap}
+.crew{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.crew-l{display:flex;align-items:center;gap:10px}
+.ci{width:32px;height:32px;border-radius:999px;background:var(--card);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none}
+.sbtn{border:0;border-radius:999px;padding:7px 11px;background:var(--card);color:var(--ink);font-size:12px;font-weight:600}
+.cat-t{font-weight:700;color:#6E3511}.cat-s{font-size:13px;color:#6E3511;margin-top:2px}
+.acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.abtn{display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none;border:0;border-radius:14px;padding:12px;font-weight:700;font-size:13px;color:var(--card)!important}
+.abtn.k{background:var(--zaza)}.abtn.s{background:var(--ink)}
+.abtn.off{background:#DCD3C6;color:#5A5146!important;cursor:not-allowed}
+.abtn.ghost{background:var(--card);color:var(--ink)!important;border:1px solid var(--bd);font-weight:600}
+.dpad{padding:16px}
+.abtn.del{background:transparent;color:#8A2A1C!important;border:1px solid #F0C9C2;font-weight:600;width:100%}
+.abtn.del.on{background:#C0392B;color:#FFFDF9!important;border-color:#C0392B}
+/* weekoverzicht */
+.hdr.wk{gap:12px;padding:14px 18px;border-radius:22px;box-shadow:var(--sh2)}
+.logo.lg{width:40px;height:40px;font-size:15px}
+.brand-c{display:flex;flex-direction:column}
+.brand-c .t{font-weight:700;font-size:17px}
+.wpill{border:0;border-radius:999px;padding:9px 14px;background:#EFE8DD;color:#3D362D;font-size:13px;font-weight:600}
+.wpill.on{background:var(--ink);color:var(--card)}
+.hchip{border:0;border-radius:999px;padding:9px 14px;font-size:13px;font-weight:600}
+.btn-new.t{background:var(--zaza);font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.kpi{background:var(--card);border-radius:20px;padding:16px 18px;box-shadow:var(--sh)}
+.kpi .l{font-size:12px;color:var(--mut);font-weight:500}
+.kpi .v{font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:700;margin-top:4px}
+.kpi .s{font-size:12px;color:var(--mut)}
+.wsec{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.wmain{flex:999 1 640px;min-width:0;background:var(--card);border-radius:24px;padding:18px;box-shadow:var(--sh2)}
+.wmain-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.wmain-h h2{margin:0;font-size:20px}
+.leg{display:flex;gap:14px;font-size:12px;color:#4A433A;align-items:center;flex-wrap:wrap}
+.leg span{display:flex;align-items:center;gap:6px}
+.leg i{width:10px;height:10px;border-radius:999px;display:inline-block}
+.wgrid{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:10px;min-width:1080px}
+.wday{display:flex;flex-direction:column;gap:8px;border-radius:18px;padding:10px;min-height:360px;background:var(--soft)}
+.wday.we{background:#F3ECF6}
+.wday-h{display:flex;align-items:baseline;justify-content:space-between;padding:2px 4px 4px;border:0;background:transparent;border-radius:8px;width:100%;color:var(--ink)}
+.wday-h:hover{background:rgba(255,255,255,.6)}
+.wday-h .d{font-weight:700;font-size:14px}.wday-h .n{font-size:12px;color:var(--mut)}
+.wday-h.today .d{color:var(--zaza)}
+.noday{font-size:12px;color:var(--mut2);padding:10px 6px}
+.wcard{display:block;width:100%;text-align:left;border-radius:14px;padding:10px;background:var(--card);color:var(--ink);border:2px solid transparent;box-shadow:0 1px 2px rgba(60,40,10,.08)}
+.wcard.on{border-color:var(--ink)}
+.wc-top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.wc-time{font-size:12px;font-weight:600;color:#4A433A}
+.wc-name{font-size:14px;font-weight:700;margin-top:4px}
+.wc-sub{font-size:12px;color:var(--mut);margin-top:2px}
+.wcard .flags{margin-top:6px}
+.walf{display:block;width:100%;text-align:left;border:2px solid transparent;border-radius:14px;padding:8px 10px;background:#EEF0FB;color:#2E3A86;font-size:12px}
+.walf.on{border-color:#2E3A86}
+.waside{flex:1 1 340px;min-width:300px;max-width:420px;background:var(--card);border-radius:24px;padding:20px;box-shadow:var(--sh2)}
+.ws{display:flex;flex-direction:column;gap:14px}
+.ws-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.ws-h h2{margin:4px 0 0;font-size:26px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tile{background:var(--soft);border-radius:14px;padding:10px 12px}
+.tile .l{font-size:11px;color:var(--mut)}.tile .v{font-weight:700;font-size:18px}.tile .v2{font-weight:600;font-size:14px}
+.rows{border-radius:16px;border:1px solid var(--line);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.rows>div{display:flex;justify-content:space-between;gap:10px;font-size:13px}
+.rows>div>span:first-child{color:var(--mut)}
+.rows>div>*:last-child{font-weight:600;text-align:right}
+.skb{border-radius:16px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ski{width:36px;height:36px;border-radius:999px;background:var(--ink);color:var(--card);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none}
+.nbox{font-size:14px;line-height:1.5;background:#FFF7E8;border-radius:14px;padding:10px 12px;white-space:pre-wrap}
+.hint{color:var(--mut);font-size:14px;padding:30px 6px;text-align:center}
+.bottom{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.bcard{background:var(--card);border-radius:24px;padding:18px;box-shadow:var(--sh)}
+.bcard h3{margin:0 0 12px;font-size:17px}
+.boatb{border-radius:16px;padding:12px 14px}
+.boatb .t{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.boatb .s{font-size:13px;margin-top:4px}
+.sbar{height:10px;border-radius:999px;background:#EFE8DD;overflow:hidden}
+.sbar div{height:10px;border-radius:999px}
+.todo{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.4}
+.todo i{width:8px;height:8px;border-radius:999px;margin-top:6px;flex:none}
+/* formulier */
+.frm{display:flex;flex-direction:column;gap:12px}
+.frm-h{display:flex;justify-content:space-between;align-items:center}
+.frm-h h2,.frm-h .h{margin:0;font-size:22px;font-weight:700}
+.fg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fg label{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fg label.w{grid-column:1/-1}
+.fg label>span{font-size:12px;color:#4A433A;font-weight:600}
+.fg input,.fg select{border:1px solid var(--bd);border-radius:12px;padding:10px;font-size:14px;background:var(--card);color:var(--ink);min-width:0;width:100%;-webkit-appearance:none;appearance:none}
+.fg select{background-image:linear-gradient(45deg,transparent 50%,#6B6257 50%),linear-gradient(135deg,#6B6257 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:28px}
+.fg input:focus,.fg select:focus{outline:2px solid var(--zaza);outline-offset:1px}
+.fg label.ck{flex-direction:row;align-items:center;gap:8px;grid-column:1/-1}
+.fg label.ck input{width:20px;height:20px;-webkit-appearance:checkbox;appearance:auto;accent-color:var(--zaza)}
+.save{border:0;border-radius:14px;padding:13px;background:var(--zaza);color:var(--card);font-weight:700;font-size:14px}
+.save[disabled]{opacity:.6}
+.ferr{background:#FBE3DF;color:#8A2A1C;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:600}
+.fwarn{background:#FDEBD3;color:#7A4508;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:600}
+/* schippers */
+.skl{display:flex;flex-direction:column;gap:4px}
+.skr{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:0;background:transparent;border-radius:12px;padding:8px 10px;font-size:13px;color:var(--ink)}
+.skr:hover,.skr.on{background:var(--soft)}
+.skr .r{color:var(--mut);font-size:12px;text-align:right}
+/* mobiel */
+.mwrap{max-width:560px;margin:0 auto;min-height:100vh;padding:18px 16px calc(110px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+.mtop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mtop-r{display:flex;gap:6px;align-items:center}
+.mbtn{border:0;border-radius:999px;padding:8px 12px;background:var(--card);color:var(--ink);font-size:12px;font-weight:600;box-shadow:0 1px 2px rgba(60,40,10,.08)}
+.mbtn.r{width:34px;height:34px;padding:0;font-size:16px}
+.mbtn.on{background:var(--ink);color:var(--card)}
+.mchips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.mchips::-webkit-scrollbar{display:none}
+.mchips button{flex:none;border:0;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:600}
+.strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.sday{border:0;border-radius:14px;padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--card);color:var(--ink)}
+.sday.on{background:var(--ink);color:var(--card)}
+.sday .a{font-size:11px;font-weight:600}.sday .n{font-size:16px;font-weight:700}
+.sday i{width:5px;height:5px;border-radius:999px;background:transparent}
+.sday.today:not(.on) .n{color:var(--zaza)}
+.mday-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.mday-h h2{margin:0;font-size:20px}
+.mcard{background:var(--card);border-radius:18px;padding:14px}
+.mcard .h{font-weight:700;font-size:15px;margin-bottom:8px}
+.mmonth{background:var(--card);border-radius:18px;padding:12px}
+.mm-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mm-h .t{font-weight:700;font-size:17px}
+.mm-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mm-g .w{font-size:10px;font-weight:700;color:var(--mut);text-align:center;letter-spacing:.06em;padding:4px 0}
+.mm-d{border:0;background:var(--soft);border-radius:10px;min-height:46px;padding:5px 0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:13px;font-weight:700;color:var(--ink)}
+.mm-d.out{background:transparent;color:var(--none)}
+.mm-d.on{background:var(--ink);color:var(--card)}
+.mm-d.today:not(.on){color:var(--zaza);box-shadow:inset 0 0 0 2px var(--zaza)}
+.mm-dots{display:flex;gap:2px;height:5px}
+.mm-dots i{width:5px;height:5px;border-radius:999px}
+.fab{position:fixed;right:max(18px,calc(50% - 262px));bottom:calc(26px + env(safe-area-inset-bottom));border:0;border-radius:999px;height:56px;padding:0 22px;background:var(--zaza);color:var(--card);font-weight:700;font-size:15px;box-shadow:0 8px 24px rgba(31,94,99,.35);z-index:10}
+.ov{position:fixed;inset:0;background:rgba(30,27,22,.35);display:flex;flex-direction:column;justify-content:flex-end;z-index:30}
+.sheet{background:var(--card);border-radius:26px 26px 0 0;padding:18px 18px calc(26px + env(safe-area-inset-bottom));max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:12px;width:100%;max-width:560px;margin:0 auto}
+.grab{width:44px;height:5px;border-radius:999px;background:var(--bd);align-self:center;flex:none}
+.sheet .fg{grid-template-columns:1fr 1fr}
+.sheet .fg label{grid-column:1/-1}
+.sheet .fg label.half{grid-column:auto}
+.sheet .fg input,.sheet .fg select{padding:12px;font-size:16px}
+.sheet .save{padding:15px;font-size:15px}
+.boot{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--mut);font-size:14px}
+.spin{width:28px;height:28px;border-radius:999px;border:3px solid var(--bd);border-top-color:var(--zaza);animation:sp 0.9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:600;z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login-card{background:var(--card);border-radius:24px;box-shadow:var(--sh2);padding:28px 24px;max-width:380px;width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.login-card .logo{width:56px;height:56px;border-radius:16px;font-size:18px}
+.login-card h1{margin:0;font-size:24px}
+.login-card p{margin:0;color:var(--mut);font-size:14px;line-height:1.5}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:0;border-radius:14px;padding:14px;background:var(--zaza);color:var(--card);font-weight:700;font-size:15px}
+.linkbtn{border:0;background:transparent;color:var(--mut);font-size:12px;text-decoration:underline;padding:4px;align-self:flex-start}
+body{padding-top:env(safe-area-inset-top)}
+@media (max-width:900px){.aside{max-width:none}.det{max-width:none}}
+</style>
+</head>
+<body>
+<div id="app"><div class="boot"><div class="spin"></div>Planning laden…</div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="data.js"></script>
+<script>
+(function () {
+  'use strict';
+  /* ---------- constanten ---------- */
+  var NL_DOW = ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag'];
+  var NL_DOW_S = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];
+  var NL_MON = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+  var NL_MON_S = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  var EN_DOW = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  var PHONE = /\+?[0-9][0-9 \-]{7,}[0-9]/;
+  var PHONE_G = /\+?[0-9][0-9 \-]{7,}[0-9]/g;
+  var BOAT = {
+    zaza: { label: 'Zaza', short: 'Zaza', dot: '#1F5E63', bg: '#E3EFEF', chip: ['#DCEDED', '#133E42'], box: ['#E4F0F0', '#133E42', '#2E4F52'], info: 'tot ca. 30 pers · overdekt' },
+    mosi: { label: 'Mosi Jo', short: 'Mosi Jo', dot: '#C2662D', bg: '#F8E6D8', chip: ['#F6E0CF', '#6E3511'], box: ['#F8E6D8', '#6E3511', '#6E3511'], info: 'tot ca. 35 pers · overdekt' },
+    none: { label: 'Nog kiezen', short: 'Boot?', dot: '#9C9184', bg: '#F1ECE4', chip: ['#EFE8DD', '#5A5146'] },
+    alf: { label: 'Light Festival', short: 'ALF', dot: '#5A63B8', bg: '#E9EAF8', chip: ['#E9EAF8', '#2E3A86'] }
+  };
+  var DRANK = ['incl drank', 'eigen drank', 'overig (zie bijzonderheden)'];
+  var HAPJES = ['bittergarnituur', 'bittergarnituur en plank', 'borrelplank', 'pizza', 'burgers', 'platter'];
+
+  /* ---------- datum-hulp ---------- */
+  function p2(n) { return (n < 10 ? '0' : '') + n; }
+  function pd(s) { var a = s.split('-'); return new Date(Date.UTC(+a[0], +a[1] - 1, +a[2])); }
+  function fd(d) { return d.toISOString().slice(0, 10); }
+  function add(s, n) { var d = pd(s); d.setUTCDate(d.getUTCDate() + n); return fd(d); }
+  function dow(s) { return (pd(s).getUTCDay() + 6) % 7; }
+  function wkStart(s) { return add(s, -dow(s)); }
+  function moStart(s) { return s.slice(0, 8) + '01'; }
+  function grStart(s) { return wkStart(moStart(s)); }
+  function addMonths(s, n) { var d = pd(moStart(s)); d.setUTCMonth(d.getUTCMonth() + n); return fd(d); }
+  function dim(s) { var d = pd(moStart(s)); d.setUTCMonth(d.getUTCMonth() + 1); d.setUTCDate(0); return d.getUTCDate(); }
+  function isoWeek(s) { var d = pd(s); d.setUTCDate(d.getUTCDate() - dow(s) + 3); var f = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round(((d - f) / 864e5 - 3 + ((f.getUTCDay() + 6) % 7)) / 7); }
+  function dn(s) { return +s.slice(8, 10); }
+  function mi(s) { return +s.slice(5, 7) - 1; }
+  function yr(s) { return +s.slice(0, 4); }
+  function todayIso() { var d = new Date(); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); }
+  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  function longDate(s) { return cap(NL_DOW[dow(s)]) + ' ' + dn(s) + ' ' + NL_MON[mi(s)] + ' ' + yr(s); }
+  function dayMonth(s) { return cap(NL_DOW[dow(s)]) + ' ' + dn(s) + ' ' + NL_MON[mi(s)]; }
+  function medDate(s) { return cap(NL_DOW[dow(s)]) + ' ' + dn(s) + ' ' + NL_MON_S[mi(s)]; }
+  function shortDate(s) { return NL_DOW_S[dow(s)] + ' ' + dn(s) + '/' + (mi(s) + 1); }
+  function weekRange(ws) {
+    var we = add(ws, 6);
+    if (mi(ws) === mi(we)) return dn(ws) + ' – ' + dn(we) + ' ' + NL_MON[mi(we)] + ' ' + yr(we);
+    return dn(ws) + ' ' + NL_MON_S[mi(ws)] + ' – ' + dn(we) + ' ' + NL_MON_S[mi(we)] + ' ' + yr(we);
+  }
+  function weekRangeShort(ws) {
+    var we = add(ws, 6);
+    if (mi(ws) === mi(we)) return dn(ws) + ' – ' + dn(we) + ' ' + NL_MON_S[mi(we)];
+    return dn(ws) + ' ' + NL_MON_S[mi(ws)] + ' – ' + dn(we) + ' ' + NL_MON_S[mi(we)];
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function first(n) { return String(n || '').split(/[\s\/·(]+/)[0]; }
+  function plural(n, a, b) { return n + ' ' + (n === 1 ? a : b); }
+  function proper(s) { return String(s || '').toLowerCase().replace(/(^|[^a-zà-ÿ])([a-zà-ÿ])/g, function (m, a, b) { return a + b.toUpperCase(); }); }
+
+  /* ---------- state ---------- */
+  var S = {
+    view: 'month',          // month | week | day (laptop)
+    anchor: todayIso(),     // gefocuste dag
+    sel: null,              // geselecteerde tocht-id
+    panel: null,            // form | schippers
+    editing: null,
+    filter: 'all',          // all | schippers | alf | offertes
+    boat: null,             // zaza | mosi | none | alf
+    skipper: null,          // naam | __none
+    problems: false,
+    mMonth: false,          // mobiel: maandraster open
+    mobile: false
+  };
+  var DATA = null, CACHE = {}, LOADED_AT = 0, LOADING = false, ERR = null, FORM_ERR = null, SAVING = false, DELETING = false;
+
+  /* ---------- data ---------- */
+  function rangeKey() { return grStart(S.anchor); }
+  function prefetch(dateIso) {
+    var k = grStart(dateIso);
+    if (CACHE[k] || !ABC.authValid()) return;
+    ABC.run().withSuccessHandler(function (d) { CACHE[k] = prep(d); try { localStorage.setItem('abc_' + k, JSON.stringify(d)); } catch (e) {} }).getData(k, add(k, 41));
+  }
+
+  function load(force) {
+    var gs = rangeKey(), ge = add(gs, 41);
+    if (!force && CACHE[gs]) { DATA = CACHE[gs]; render(); return; }
+    DATA = CACHE[gs] || null;
+    if (!DATA) { try { var ls = localStorage.getItem('abc_' + gs); if (ls) DATA = prep(JSON.parse(ls)); } catch (e) {} }
+    LOADING = true;
+    render();
+    if (!ABC.authValid()) { ERR = 'AUTH'; LOADING = false; render(); return; }
+    ABC.run()
+      .withSuccessHandler(function (d) {
+        LOADING = false; ERR = null;
+        CACHE[gs] = prep(d);
+        try { localStorage.setItem('abc_' + gs, JSON.stringify(d)); } catch (e) {}
+        LOADED_AT = Date.now();
+        prefetch(addMonths(S.anchor, 1)); prefetch(addMonths(S.anchor, -1));
+        if (rangeKey() === gs) DATA = CACHE[gs];
+        if (S.panel === 'form') return;
+        render();
+      })
+      .withFailureHandler(function (e) {
+        LOADING = false;
+        ERR = (e && e.message) || String(e);
+        render();
+      })
+      .getData(gs, ge);
+  }
+
+  function prep(d) {
+    var T = todayIso();
+    var trips = (d.trips || []).filter(function (t) { return t.kind === 'trip'; }).map(function (t) {
+      var o = {}; for (var k in t) o[k] = t[k]; o.conflictWith = []; return o;
+    });
+    var groups = {}, conflicts = [];
+    trips.forEach(function (t) {
+      if (!t.boat || t.startMin == null) return;
+      var k = t.date + '|' + t.boat;
+      (groups[k] = groups[k] || []).push(t);
+    });
+    Object.keys(groups).forEach(function (k) {
+      var l = groups[k].sort(function (a, b) { return a.startMin - b.startMin; });
+      for (var i = 0; i < l.length; i++) for (var j = i + 1; j < l.length; j++) {
+        var a = l[i], b = l[j];
+        var aEnd = a.endMin != null ? a.endMin : a.startMin + 90;
+        if (b.startMin < aEnd) {
+          a.conflict = b.conflict = true;
+          a.conflictWith.push(b); b.conflictWith.push(a);
+          conflicts.push({ date: a.date, boat: a.boat, a: a, b: b });
+        }
+      }
+    });
+    trips.forEach(function (t) {
+      t.upcoming = t.date >= T;
+      t.noSkipper = !t.schipper;
+      t.noPhone = !t.phone;
+      t.warn = t.noSkipper || !!t.conflict;
+      t.alfPriv = !!t.source || /light ?festival|\balf\b/i.test(t.notes + ' ' + t.klantRaw);
+      var c = (t.notes || '').match(/(\d+)\s*(?:euro|eur|€)?\s*cash|cash\s*(?:nog\s*)?(?:€\s*)?(\d+)/i);
+      t.cash = c ? (c[1] || c[2]) : '';
+    });
+    var alfs = (d.alf || []).filter(function (a) { return a.booked > 0; }).map(function (a) {
+      var o = {}; for (var k in a) o[k] = a[k]; o.kind = 'alf'; o.name = 'Light Festival'; return o;
+    });
+    (d.trips || []).filter(function (t) { return t.kind === 'alfnote'; }).forEach(function (n) {
+      if (alfs.some(function (a) { return a.date === n.date && a.start === n.start; })) return;
+      alfs.push({ id: n.id, kind: 'alf', name: 'Light Festival', date: n.date, start: n.start, end: n.end, startMin: n.startMin, endMin: n.endMin, timeLabel: n.timeLabel, booked: 0, cap: 0, note: n.klantRaw, boats: [], sheet: n.sheet, row: n.row, gid: n.gid });
+    });
+    var sk = {}, loc = {};
+    (d.schippers || []).forEach(function (s) { sk[s.naam.toLowerCase()] = s.tel; });
+    (d.locaties || []).forEach(function (l) { loc[l.naam.toLowerCase()] = l.link; });
+    return { raw: d, trips: trips, alfs: alfs, conflicts: conflicts, sk: sk, loc: loc };
+  }
+
+  function findItem(id) {
+    if (!DATA || !id) return null;
+    var all = DATA.trips.concat(DATA.alfs);
+    for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
+    return null;
+  }
+  function bk(x) { return x.kind === 'alf' ? 'alf' : (x.boat || 'none'); }
+
+  /* ---------- filters ---------- */
+  function passT(t) {
+    if (S.problems && !(t.upcoming && (t.warn || t.noPhone))) return false;
+    if (S.filter === 'alf' && !t.alfPriv) return false;
+    if (S.filter === 'offertes' && t.status === 'Bevestigd') return false;
+    if (S.boat === 'alf') return false;
+    if (S.boat && (t.boat || 'none') !== S.boat) return false;
+    if (S.skipper) {
+      if (S.skipper === '__none') { if (t.schipper) return false; }
+      else if ((t.schipper || '').toLowerCase() !== S.skipper.toLowerCase()) return false;
+    }
+    return true;
+  }
+  function passA() {
+    return !S.problems && S.filter !== 'offertes' && (!S.boat || S.boat === 'alf') && !S.skipper;
+  }
+  function byStart(a, b) { return (a.startMin == null ? 9999 : a.startMin) - (b.startMin == null ? 9999 : b.startMin); }
+  function dayItems(date) {
+    var t = DATA.trips.filter(function (x) { return x.date === date && passT(x); });
+    var a = passA() ? DATA.alfs.filter(function (x) { return x.date === date; }) : [];
+    return t.concat(a).sort(byStart);
+  }
+
+  /* ---------- WhatsApp (zelfde teksten als de formules in de sheet) ---------- */
+  function locLink(n) { return DATA.loc[(n || '').trim().toLowerCase()] || ''; }
+  function skTel(n) { return DATA.sk[(n || '').trim().toLowerCase()] || ''; }
+  function ddmmyyyy(s) { return s.slice(8, 10) + '-' + s.slice(5, 7) + '-' + s.slice(0, 4); }
+  function dagNaam(t) { return (t.dag || NL_DOW[dow(t.date)]).trim(); }
+
+  function waKlant(t) {
+    if (!t.phone) return '';
+    var naam = t.klantRaw.replace(PHONE_G, '').replace(/^\s*via\s+/i, '').trim();
+    var vn = naam ? ' ' + proper(naam.split(/\s+/)[0]) : '';
+    var snr = skTel(t.schipper);
+    var s = proper(t.schipper.trim()) + (snr ? ' +' + snr : '');
+    var opl = locLink(t.opstap);
+    var N = '\n', msg;
+    if (!t.en) {
+      msg = 'Goedendag' + vn + ', bedankt voor het boeken bij Amsterdam Boat Company. Hierbij de laatste gegevens voor jullie tocht:' + N + N +
+        '*Datum:* ' + dagNaam(t) + ' ' + ddmmyyyy(t.date) + N + '*Tijd:* ' + t.tijd + N + '*Opstap:* ' + t.opstap + N + '*Afstap:* ' + t.afstap + N +
+        '*Boot:* ' + t.boatRaw + N + '*Schipper:* ' + s + N + '*Pax:* ' + (t.pax || '') + N + '*Drank:* ' + t.drankRaw + N + '*Hapjes:* ' + t.hapjes +
+        (opl.indexOf('http') === 0 ? N + '*Route naar de opstap:* ' + opl : '') + N + N +
+        'Zijn er op de dag zelf vragen? Dan kun je de schipper direct bereiken op het nummer hierboven.' + N + N + 'Alvast een hele fijne tocht gewenst!';
+    } else {
+      var dr = t.drankRaw === 'incl drank' ? 'included' : (t.drankRaw === 'eigen drank' ? 'bring your own' : t.drankRaw);
+      msg = 'Hello' + vn + ', thank you for booking with Amsterdam Boat Company. Here are the final details for your trip:' + N + N +
+        '*Date:* ' + EN_DOW[dow(t.date)] + ' ' + ddmmyyyy(t.date) + N + '*Time:* ' + t.tijd + N + '*Boarding:* ' + t.opstap + N + '*Drop-off:* ' + t.afstap + N +
+        '*Boat:* ' + t.boatRaw + N + '*Skipper:* ' + s + N + '*Guests:* ' + (t.pax || '') + N + '*Drinks:* ' + dr + N + '*Snacks:* ' + t.hapjes +
+        (opl.indexOf('http') === 0 ? N + '*Directions to the boarding point:* ' + opl : '') + N + N +
+        'Any questions on the day? You can reach your skipper directly on the number above.' + N + N + 'We wish you a wonderful trip!';
+    }
+    return 'https://wa.me/' + t.phone + '?text=' + encodeURIComponent(msg);
+  }
+  function waSchipper(t) {
+    var sk = t.schipper.trim(), N = '\n';
+    var klant = t.klantRaw.replace(PHONE_G, '').trim() + (t.phone ? ' +' + t.phone : '');
+    var msg = (sk ? 'Hey ' + proper(sk) : 'Hey') + ', hierbij de gegevens voor je tocht:' + N + N +
+      '*Datum:* ' + dagNaam(t) + ' ' + ddmmyyyy(t.date) + N + '*Tijd:* ' + t.tijd + N + '*Opstap:* ' + t.opstap + N + '*Afstap:* ' + t.afstap + N +
+      '*Boot:* ' + t.boatRaw + N + '*Klant:* ' + klant + N + '*Pax:* ' + (t.pax || '') + N + '*Drank:* ' + t.drankRaw + N + '*Hapjes:* ' + t.hapjes + N +
+      '*Bijzonderheden:* ' + t.notes + N + N +
+      'Graag 10 minuten van tevoren op de opstaplocatie zijn, zodat je op tijd kunt vertrekken.' + N + N +
+      'Na afloop de boot graag schoon en leeg achterlaten en de bar weer aanvullen, zodat alles klaar is voor de volgende groep.' + N + N +
+      'Bij vragen kun je ons altijd even een berichtje sturen. Fijne tocht!';
+    return 'https://wa.me/' + skTel(sk) + '?text=' + encodeURIComponent(msg);
+  }
+  function sheetLink(x) {
+    if (!DATA || !DATA.raw.sheetUrl) return '';
+    if (x.sheet && x.row) return DATA.raw.sheetUrl + '#gid=' + x.gid + '&range=A' + x.row;
+    if (x.kind === 'alf' && DATA.raw.alfGid != null) return DATA.raw.sheetUrl + '#gid=' + DATA.raw.alfGid;
+    return DATA.raw.sheetUrl;
+  }
+
+  /* ---------- kleine bouwstenen ---------- */
+  function chip(text, c) { return '<span class="chip" style="background:' + c[0] + ';color:' + c[1] + '">' + esc(text) + '</span>'; }
+  function flagsHtml(t) {
+    var f = [];
+    if (t.status !== 'Bevestigd') f.push(chip(t.status, ['#FDEBD3', '#7A4508']));
+    if (t.noSkipper) f.push(chip('Geen schipper', ['#FBE3DF', '#8A2A1C']));
+    if (t.conflict) f.push(chip('Bootconflict', ['#FDEBD3', '#7A4508']));
+    if (t.noPhone) f.push(chip('Geen tel.', ['#EFE8DD', '#5A5146']));
+    return f.length ? '<div class="flags">' + f.join('') + '</div>' : '';
+  }
+  function statusChip(t) {
+    return t.status === 'Bevestigd' ? chip('Bevestigd', ['#DDEFE2', '#1D5B33']) : chip(t.status, ['#FDEBD3', '#7A4508']);
+  }
+  function drankLabel(t) {
+    var d = t.drankRaw || '';
+    if (d === 'incl drank') return 'Incl. drank';
+    if (d === 'eigen drank') return 'Eigen drank';
+    if (/^overig/i.test(d)) return 'Overig';
+    return d ? cap(d) : '—';
+  }
+  function duration(t) {
+    if (t.startMin == null || t.endMin == null) return '—';
+    var m = t.endMin - t.startMin;
+    return Math.floor(m / 60) + 'u' + (m % 60 ? ' ' + (m % 60) : '');
+  }
+  function initials(n) {
+    return String(n).split(/\s+/).filter(function (w) { return /[A-Za-zÀ-ÿ]/.test(w.charAt(0)); }).slice(0, 2).map(function (w) { return w.charAt(0); }).join('') || 'K';
+  }
+  function confText(c, longForm) {
+    var when = longForm ? shortDate(c.date) : NL_DOW_S[dow(c.date)] + ' ' + dn(c.date) + ' ' + NL_MON_S[mi(c.date)];
+    return BOAT[c.boat].label + (longForm ? ' dubbel geboekt op ' : ' dubbel op ') + when + ' (' + first(c.a.name) + ' ' + c.a.start + ' en ' + first(c.b.name) + ' ' + c.b.start + ')';
+  }
+  function xbtn(label) { return '<button class="x" data-act="close" aria-label="' + (label || 'Sluiten') + '">×</button>'; }
+  function locHtml(n) {
+    if (!n) return '<span>—</span>';
+    var l = locLink(n);
+    return l ? '<a href="' + esc(l) + '" target="_blank" rel="noopener">' + esc(n) + '</a>' : '<span>' + esc(n) + '</span>';
+  }
+  function waButtons(t) {
+    var k = waKlant(t);
+    return '<div class="acts">' +
+      (k ? '<a class="abtn k" href="' + esc(k) + '" target="_blank" rel="noopener">App klant' + (t.en ? ' EN' : '') + '</a>' : '<span class="abtn off" title="Geen telefoonnummer">Geen tel. klant</span>') +
+      '<a class="abtn s" href="' + esc(waSchipper(t)) + '" target="_blank" rel="noopener">App schipper</a></div>';
+  }
+  function secButtons(t) {
+    return '<div class="acts"><button class="abtn ghost" data-act="edit">Bewerken</button><a class="abtn ghost" href="' + esc(sheetLink(t)) + '" target="_blank" rel="noopener">Open in sheet</a></div>' + delBtn(t);
+  }
+  function delBtn(t) {
+    var on = S.confirmDel === t.id;
+    return '<button class="abtn del' + (on ? ' on' : '') + '" data-act="del:' + esc(t.id) + '">' + (on ? (DELETING ? 'Verwijderen…' : 'Zeker weten? Tik nogmaals om te verwijderen') : 'Tocht verwijderen') + '</button>';
+  }
+  function conflictBox(t) {
+    if (!t.conflict) return '';
+    return '<div class="box warnb">Bootconflict: ' + esc(BOAT[t.boat].label) + ' ook ingepland voor ' +
+      t.conflictWith.map(function (o) { return esc(o.name) + ' (' + esc(o.timeLabel) + ')'; }).join(', ') + '.</div>';
+  }
+  function bar(booked, capa, color) {
+    var pct = capa ? Math.min(100, Math.round(booked / capa * 100)) : 0;
+    return '<div class="bar"><div style="width:' + pct + '%;' + (color ? 'background:' + color : '') + '"></div></div>';
+  }
+  function alfLabel(a) { return a.cap ? 'Light Festival ' + a.booked + '/' + a.cap : 'Light Festival · ' + (a.note || ''); }
+
+  /* ---------- todo's ---------- */
+  function todoList(list, confs) {
+    var out = [];
+    confs.forEach(function (c) { out.push([confText(c, true) + '.', '#C2662D']); });
+    list.filter(function (t) { return t.upcoming && t.noPhone; }).forEach(function (t) { out.push([t.name + ' (' + shortDate(t.date) + ', ' + (t.start || '?') + '): telefoonnummer ontbreekt.', '#C0392B']); });
+    list.filter(function (t) { return t.upcoming && t.status !== 'Bevestigd'; }).forEach(function (t) { out.push([t.name + ' (' + shortDate(t.date) + '): ' + t.status.toLowerCase() + ', nog niet bevestigd.', '#C2662D']); });
+    list.filter(function (t) { return t.upcoming && t.cash; }).forEach(function (t) { out.push([t.name + ' (' + shortDate(t.date) + '): nog € ' + t.cash + ' cash innen.', '#1F5E63']); });
+    var ns = list.filter(function (t) { return t.upcoming && t.noSkipper; }).length;
+    if (ns) out.push([plural(ns, 'tocht', 'tochten') + ' zonder schipper.', '#C0392B']);
+    var nb = list.filter(function (t) { return t.upcoming && !t.boat; }).length;
+    if (nb) out.push([plural(nb, 'tocht', 'tochten') + ' nog zonder boot.', '#9C9184']);
+    return out;
+  }
+  function todoHtml(items, max) {
+    if (!items.length) return '<div class="m12" style="font-size:13px">Niets bijzonders. Alles staat klaar.</div>';
+    var shown = items.slice(0, max), rest = items.length - shown.length;
+    return shown.map(function (x) { return '<div class="todo"><i style="background:' + x[1] + '"></i><span>' + esc(x[0]) + '</span></div>'; }).join('') +
+      (rest > 0 ? '<div class="m12">en nog ' + rest + ' punten — gebruik "Toon alleen problemen".</div>' : '');
+  }
+
+  /* ---------- formulier ---------- */
+  function formValues() {
+    var t = S.editing;
+    if (t) {
+      return {
+        datum: t.date, start: t.start, end: t.end, naam: t.naamRaw, tel: t.phone ? '+' + t.phone : '', pax: t.pax || '',
+        drank: t.drankRaw, hapjes: t.hapjes, opstap: t.opstap, afstap: t.afstap,
+        boot: /zaza/i.test(t.boatRaw) ? 'ZAZA' : (/mosi/i.test(t.boatRaw) ? 'Mosi Jo' : ''),
+        schipper: t.schipper, status: /^\s*optie\b/i.test(t.notes) ? 'Optie' : 'Bevestigd',
+        notes: t.notes.replace(/^OPTIE\s*·?\s*/i, ''), en: /\bEN\b/.test(t.klantRaw)
+      };
+    }
+    return { datum: S.newDate || (S.anchor < todayIso() ? todayIso() : S.anchor), start: '', end: '', naam: '', tel: '', pax: '', drank: 'incl drank', hapjes: '', opstap: 'Central Station', afstap: 'Central Station', boot: '', schipper: '', status: 'Bevestigd', notes: '', en: false };
+  }
+  function opt(v, label, cur) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; }
+  function formHtml(mobile) {
+    var v = formValues();
+    var sk = (DATA ? DATA.raw.schippers : []).map(function (s) { return s.naam; });
+    if (v.schipper && sk.map(function (x) { return x.toLowerCase(); }).indexOf(v.schipper.toLowerCase()) < 0) sk.push(v.schipper);
+    var dr = DRANK.slice(); if (v.drank && dr.indexOf(v.drank) < 0) dr.push(v.drank);
+    var locs = (DATA ? DATA.raw.locaties : []).map(function (l) { return '<option value="' + esc(l.naam) + '"></option>'; }).join('');
+    var hap = HAPJES.map(function (h) { return '<option value="' + esc(h) + '"></option>'; }).join('');
+    var h = mobile ? 'half' : '';
+    var title = S.editing ? 'Tocht bewerken' : 'Nieuwe tocht';
+    return '<form id="tripForm" class="frm" autocomplete="off" novalidate>' +
+      '<div class="frm-h">' + (mobile ? '<div class="h sg">' + title + '</div>' : '<h2 class="sg">' + title + '</h2>') + '<button type="button" class="x" data-act="closeform" aria-label="Sluiten">×</button></div>' +
+      '<div class="m12">' + (S.editing ? 'Wijzigingen gaan direct naar regel ' + S.editing.row + ' in tabblad ' + esc(S.editing.sheet) + '.' : 'Wordt opgeslagen in het juiste maandtabblad van je planning.') + '</div>' +
+      (FORM_ERR ? '<div class="ferr">' + esc(FORM_ERR) + '</div>' : '') +
+      '<div class="fg">' +
+      '<label class="w"><span>Datum</span><input type="date" name="datum" required value="' + esc(v.datum) + '"></label>' +
+      '<label class="' + h + '"><span>Begintijd</span><input type="time" name="start" step="300" value="' + esc(v.start) + '"></label>' +
+      '<label class="' + h + '"><span>Eindtijd</span><input type="time" name="end" step="300" value="' + esc(v.end) + '"></label>' +
+      '<label class="w"><span>Klant</span><input type="text" name="naam" placeholder="Naam klant" required value="' + esc(v.naam) + '"></label>' +
+      '<label class="' + h + '"><span>Telefoon</span><input type="tel" name="tel" inputmode="tel" placeholder="+31 6 …" value="' + esc(v.tel) + '"></label>' +
+      '<label class="' + h + '"><span>Pax</span><input type="number" name="pax" inputmode="numeric" min="0" placeholder="20" value="' + esc(v.pax) + '"></label>' +
+      '<label class="' + h + '"><span>Drank</span><select name="drank">' + dr.map(function (d) { return opt(d, d, v.drank); }).join('') + '</select></label>' +
+      '<label class="' + h + '"><span>Hapjes</span><input type="text" name="hapjes" list="dl-hap" placeholder="—" value="' + esc(v.hapjes) + '"></label>' +
+      '<label class="' + h + '"><span>Opstap</span><input type="text" name="opstap" list="dl-loc" value="' + esc(v.opstap) + '"></label>' +
+      '<label class="' + h + '"><span>Afstap</span><input type="text" name="afstap" list="dl-loc" value="' + esc(v.afstap) + '"></label>' +
+      '<label class="' + h + '"><span>Boot</span><select name="boot">' + opt('', 'Nog kiezen', v.boot) + opt('ZAZA', 'Zaza', v.boot) + opt('Mosi Jo', 'Mosi Jo', v.boot) + '</select></label>' +
+      '<label class="' + h + '"><span>Schipper</span><select name="schipper">' + opt('', 'Nog indelen', v.schipper) + sk.map(function (n) { return opt(n, n, (v.schipper || '').toLowerCase() === n.toLowerCase() ? n : ''); }).join('') + '</select></label>' +
+      '<label class="w"><span>Status</span><select name="status">' + opt('Bevestigd', 'Bevestigd', v.status) + opt('Optie', 'Optie', v.status) + '</select></label>' +
+      '<label class="w"><span>Bijzonderheden</span><input type="text" name="notes" placeholder="Bijv. verwarming, versiering, cash" value="' + esc(v.notes) + '"></label>' +
+      '<label class="ck"><input type="checkbox" name="en"' + (v.en ? ' checked' : '') + '><span>Engelstalig klantbericht (gaat automatisch bij buitenlands nummer)</span></label>' +
+      '</div>' +
+      '<datalist id="dl-loc">' + locs + '</datalist><datalist id="dl-hap">' + hap + '</datalist>' +
+      '<div id="fwarn"></div>' +
+      '<button type="submit" class="save"' + (SAVING ? ' disabled' : '') + '>' + (SAVING ? 'Opslaan…' : 'Tocht opslaan') + '</button>' +
+      '</form>';
+  }
+  function checkFormConflict(form) {
+    var box = document.getElementById('fwarn');
+    if (!box || !DATA) return;
+    var f = form.elements;
+    var b = /zaza/i.test(f.boot.value) ? 'zaza' : (/mosi/i.test(f.boot.value) ? 'mosi' : '');
+    var s = f.start.value, e = f.end.value;
+    if (!b || !s) { box.innerHTML = ''; return; }
+    var sm = +s.slice(0, 2) * 60 + +s.slice(3, 5), em = e ? +e.slice(0, 2) * 60 + +e.slice(3, 5) : sm + 90;
+    var hit = DATA.trips.filter(function (t) {
+      if (t.date !== f.datum.value || t.boat !== b || t.startMin == null) return false;
+      if (S.editing && t.id === S.editing.id) return false;
+      var te = t.endMin != null ? t.endMin : t.startMin + 90;
+      return t.startMin < em && sm < te;
+    });
+    box.innerHTML = hit.length ? '<div class="fwarn">Let op: ' + esc(BOAT[b].label) + ' is dan al geboekt voor ' + hit.map(function (t) { return esc(t.name) + ' (' + esc(t.timeLabel) + ')'; }).join(', ') + '.</div>' : '';
+  }
+
+  /* ---------- panelen ---------- */
+  function schippersPanel(scope) {
+    var up = scope.filter(function (t) { return t.upcoming; });
+    var rows = (DATA.raw.schippers || []).map(function (s) {
+      var l = up.filter(function (t) { return (t.schipper || '').toLowerCase() === s.naam.toLowerCase(); }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : byStart(a, b); });
+      return { naam: s.naam, n: l.length, next: l[0] };
+    }).sort(function (a, b) { return b.n - a.n || a.naam.localeCompare(b.naam); });
+    var none = up.filter(function (t) { return t.noSkipper; }).length;
+    return '<div class="dpad"><div class="frm-h" style="margin-bottom:6px"><h2 class="sg" style="font-size:20px;margin:0">Schippers</h2>' + xbtn() + '</div>' +
+      '<div class="m12" style="margin-bottom:10px">Komende tochten in deze ' + (S.view === 'week' ? 'week' : 'maand') + '. Klik om te filteren.</div>' +
+      '<div class="skl">' +
+      '<button class="skr' + (S.skipper === '__none' ? ' on' : '') + '" data-act="skipper:__none"><span class="b" style="color:#8A2A1C">Nog niet ingedeeld</span><span class="r">' + plural(none, 'tocht', 'tochten') + '</span></button>' +
+      rows.map(function (r) {
+        return '<button class="skr' + (S.skipper && S.skipper.toLowerCase() === r.naam.toLowerCase() ? ' on' : '') + '" data-act="skipper:' + esc(r.naam) + '"><span class="b">' + esc(r.naam) + '</span><span class="r">' +
+          (r.n ? plural(r.n, 'tocht', 'tochten') + '<br>eerst ' + esc(shortDate(r.next.date)) + ' ' + esc(r.next.start || '') : '—') + '</span></button>';
+      }).join('') + '</div></div>';
+  }
+  function alfDetail(a) {
+    var boats = (a.boats || []).filter(function (b) { return b.boat; });
+    return '<div class="dpad" style="display:flex;flex-direction:column;gap:12px">' +
+      '<div class="frm-h" style="align-items:flex-start"><div><div class="m12">' + esc(longDate(a.date)) + ' · ' + esc(a.timeLabel || a.shift || '') + '</div><div class="sg" style="font-weight:700;font-size:24px;margin-top:4px">Light Festival</div></div>' + xbtn() + '</div>' +
+      (a.cap ? '<div class="alfc" style="cursor:default"><div class="alfc-t"><span>Losse tickets</span><span>' + a.booked + '/' + a.cap + '</span></div>' + bar(a.booked, a.cap) + '</div>' : '<div class="nbox">' + esc(a.note || '') + '</div>') +
+      (boats.length ? '<div class="rows">' + boats.map(function (b) {
+        return '<div><span>' + esc(b.boat) + '</span><span>' + esc(b.schipper || 'geen schipper') + (b.host ? ' · host ' + esc(b.host) : '') + (b.pax ? ' · ' + b.pax + ' pax' : '') + '</span></div>';
+      }).join('') + '</div>' : '') +
+      (a.status ? '<div class="m12">Status: ' + esc(a.status) + '</div>' : '') +
+      '<a class="abtn ghost" href="' + esc(sheetLink(a)) + '" target="_blank" rel="noopener">Open in sheet</a></div>';
+  }
+
+  /* detail: maandagenda-stijl */
+  function detailAgenda(t) {
+    if (t.kind === 'alf') return alfDetail(t);
+    return '<div class="det-h"><div><div class="sg det-t">' + esc(t.name) + '</div><div class="det-m">' + statusChip(t) + '<span class="m12">' + esc(longDate(t.date)) + '</span></div></div>' + xbtn() + '</div>' +
+      '<div class="who"><div class="av">' + esc(initials(t.name)) + '</div><div><div class="b">' + esc(t.name) + '</div><div class="m12">' + esc(t.source || 'Planning') + '</div></div></div>' +
+      '<div class="tri"><div><div class="tv">' + esc(t.start || '—') + '</div><div class="tl">START</div></div><div><div class="tv">' + (t.pax || '—') + '</div><div class="tl">GASTEN</div></div><div><div class="tv">' + esc(duration(t)) + '</div><div class="tl">DUUR</div></div></div>' +
+      '<div class="det-b">' +
+      '<div class="box blue"><div class="bh">TOCHT</div><div class="g2">' +
+      '<div><div class="kl">WANNEER</div><div class="kv">' + esc(NL_DOW_S[dow(t.date)] + ' ' + dn(t.date) + ' ' + NL_MON_S[mi(t.date)]) + '</div><div>' + esc(t.timeLabel) + '</div></div>' +
+      '<div><div class="kl">BOOT</div><div class="kv">' + esc(BOAT[bk(t)].label) + '</div></div>' +
+      '<div><div class="kl">OPSTAP</div><div class="kv">' + locHtml(t.opstap) + '</div></div>' +
+      '<div><div class="kl">AFSTAP</div><div class="kv">' + locHtml(t.afstap) + '</div></div>' +
+      '<div><div class="kl">KLANT</div><div class="kv">' + esc(t.name) + '</div></div>' +
+      '<div><div class="kl">CONTACT</div><div class="kv">' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : 'Ontbreekt') + '</div></div>' +
+      '</div></div>' +
+      '<div class="box white"><div class="bh">DRANK &amp; BIJZONDERHEDEN</div><div class="g2"><div><div class="kl">DRANK</div><div class="kv">' + esc(drankLabel(t)) + '</div></div><div><div class="kl">GASTEN</div><div class="kv">' + (t.pax || '—') + '</div></div></div><div class="notes">' + esc(t.notes || '—') + '</div></div>' +
+      '<div class="box" style="background:' + (t.schipper ? '#E3F2E7' : '#FBE3DF') + '"><div class="bh" style="color:#2E5B3C">CREW</div><div class="crew"><div class="crew-l"><div class="ci">' + esc(t.schipper ? t.schipper.charAt(0).toUpperCase() : '?') + '</div><div><div class="b">' + esc(t.schipper || 'Nog niet ingedeeld') + '</div><div class="m12" style="color:#4A5A4E">Schipper</div></div></div><button class="sbtn" data-act="edit">' + (t.schipper ? 'Wijzigen' : 'Indelen') + '</button></div></div>' +
+      '<div class="box cat"><div class="bh" style="color:#8A4513">CATERING</div><div class="cat-t">' + esc(t.hapjes ? cap(t.hapjes) : 'Nog niets geregeld') + '</div><div class="cat-s">' + (t.hapjes ? 'Voor ' + (t.pax || '?') + ' gasten' : 'Voeg hapjes toe voor ' + (t.pax || '?') + ' gasten.') + '</div></div>' +
+      conflictBox(t) + waButtons(t) + secButtons(t) +
+      '</div>';
+  }
+
+  /* detail: weekoverzicht-stijl */
+  function detailWeek(t) {
+    if (t.kind === 'alf') return alfDetail(t).replace('class="dpad"', 'class=""');
+    return '<div class="ws">' +
+      '<div class="ws-h"><div><div class="m12" style="font-weight:500">' + esc(medDate(t.date)) + ' · ' + esc(t.timeLabel) + '</div><h2 class="sg">' + esc(t.name) + '</h2></div><div style="display:flex;gap:8px;align-items:center">' + statusChip(t) + xbtn() + '</div></div>' +
+      '<div class="tiles"><div class="tile"><div class="l">Gasten</div><div class="v">' + (t.pax || '—') + '</div></div><div class="tile"><div class="l">Boot</div><div class="v">' + esc(BOAT[bk(t)].label) + '</div></div>' +
+      '<div class="tile"><div class="l">Drank</div><div class="v2">' + esc(drankLabel(t)) + '</div></div><div class="tile"><div class="l">Hapjes</div><div class="v2">' + esc(t.hapjes ? cap(t.hapjes) : '—') + '</div></div></div>' +
+      '<div class="rows"><div><span>Opstap</span>' + locHtml(t.opstap) + '</div><div><span>Afstap</span>' + locHtml(t.afstap) + '</div><div><span>Bron</span><span>' + esc(t.source || 'Planning') + '</span></div><div><span>Telefoon</span>' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : '<span>— ontbreekt</span>') + '</div></div>' +
+      '<div class="skb" style="background:' + (t.schipper ? '#E4F0F0' : '#FBE3DF') + '"><div style="display:flex;align-items:center;gap:10px"><div class="ski">' + esc(t.schipper ? t.schipper.charAt(0).toUpperCase() : '?') + '</div><div><div class="m12" style="font-size:11px">Schipper</div><div class="b">' + esc(t.schipper || 'Nog niet ingedeeld') + '</div></div></div><button class="sbtn" data-act="edit">' + (t.schipper ? 'Wijzigen' : 'Indelen') + '</button></div>' +
+      '<div><div class="m12" style="font-weight:500;margin-bottom:6px">Bijzonderheden</div><div class="nbox">' + esc(t.notes || '—') + '</div></div>' +
+      conflictBox(t) + waButtons(t) + secButtons(t) + '</div>';
+  }
+
+  /* ---------- laptop: maandagenda ---------- */
+  function errBar() {
+    if (ERR === 'AUTH') return '<div class="errbar"><span>Je bent uitgelogd. Je ziet de laatst geladen planning.</span><button data-act="login">Inloggen met Google</button></div>';
+    return ERR ? '<div class="errbar"><span>Kon de planning niet laden: ' + esc(ERR) + '</span><button data-act="refresh">Opnieuw</button></div>' : '';
+  }
+  function hdrAgenda() {
+    function pill(k, l) {
+      var on = k === 'all' ? (S.filter === 'all' && !S.boat && !S.skipper && !S.problems) : S.filter === k;
+      return '<button class="pill' + (on ? ' on' : '') + '" data-act="filter:' + k + '">' + l + '</button>';
+    }
+    return '<header class="card hdr"><div class="brand"><div class="logo">ABC</div><span class="sg brand-t">Agenda</span></div>' +
+      '<div class="pills">' + pill('all', 'Alle boten') + pill('schippers', 'Schippers') + pill('alf', 'Light Festival') + pill('offertes', 'Offertes') + '</div>' +
+      '<button class="btn-new" data-act="new">+ Nieuwe tocht</button></header>';
+  }
+  function alertBar(confs, noSk) {
+    if (!confs.length && !noSk && !S.problems) return '';
+    var parts = [];
+    if (confs.length) parts.push('Planningsconflict: ' + confs.map(function (c) { return confText(c, false); }).join('; '));
+    if (noSk) parts.push(plural(noSk, 'tocht', 'tochten') + ' zonder schipper');
+    if (!parts.length) parts.push('Geen problemen gevonden');
+    return '<div class="alert"><span>' + esc(parts.join(' · ')) + '</span><button data-act="problems">' + (S.problems ? 'Toon alles' : 'Toon alleen problemen') + '</button></div>';
+  }
+  function toolbar(title) {
+    function sb(v, l) { return '<button class="' + (S.view === v ? 'on' : '') + '" data-act="view:' + v + '">' + l + '</button>'; }
+    return '<div class="tb"><div class="tb-l"><button class="rb" data-act="nav:0">Vandaag</button>' +
+      '<button class="rb rnd" data-act="nav:-1" aria-label="Vorige">‹</button><button class="rb rnd" data-act="nav:1" aria-label="Volgende">›</button>' +
+      '<h2 class="sg">' + esc(title) + '</h2>' + (LOADING ? '<span class="loadtxt">laden…</span>' : '') + '</div>' +
+      '<div class="seg">' + sb('day', 'Dag') + sb('week', 'Week') + sb('month', 'Maand') + '</div></div>';
+  }
+  function evHtml(x) {
+    var b = BOAT[bk(x)], label = x.kind === 'alf' ? alfLabel(x) : x.name;
+    return '<button class="ev' + (x.id === S.sel ? ' on' : '') + '" style="background:' + b.bg + '" data-act="sel:' + esc(x.id) + '" aria-label="Open ' + esc(label) + '">' +
+      '<span class="d" style="background:' + b.dot + '"></span><b>' + esc(x.start || '') + '</b><span class="lb">' + esc(label) + '</span>' +
+      (x.warn ? '<span class="w" aria-label="Let op">!</span>' : '') + '</button>';
+  }
+  function calHtml() {
+    var a = S.anchor, gs = grStart(a), T = todayIso();
+    var offset = dow(moStart(a)), rows = Math.ceil((offset + dim(a)) / 7);
+    var cells = '';
+    for (var i = 0; i < rows * 7; i++) {
+      var d = add(gs, i), inM = d.slice(0, 7) === a.slice(0, 7), we = i % 7 >= 5;
+      var items = inM ? dayItems(d) : [];
+      cells += '<div class="cell' + (!inM ? ' out' : ' in' + (we ? ' we' : '')) + '"' + (inM ? ' data-act="newon:' + d + '"' : '') + '><div class="cell-h"><button class="num' + (d === T ? ' today' : '') + '" data-act="day:' + d + '" aria-label="' + esc(longDate(d)) + '">' + dn(d) + '</button><span style="display:flex;align-items:center;gap:4px"><span class="cnt">' + (items.length || '') + '</span>' + (inM ? '<button class="addc" data-act="newon:' + d + '" aria-label="Tocht toevoegen op ' + esc(longDate(d)) + '">+</button>' : '') + '</span></div>' +
+        '<div class="evs">' + items.map(evHtml).join('') + '</div></div>';
+    }
+    return '<div class="cal-scroll"><div class="cal"><div class="dow">' + NL_DOW_S.map(function (w) { return '<div>' + w.toUpperCase() + '</div>'; }).join('') + '</div><div class="grid">' + cells + '</div></div></div>';
+  }
+  function tripCard(t) {
+    var b = BOAT[bk(t)];
+    return '<button class="tcard' + (t.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(t.id) + '" aria-label="Open tocht ' + esc(t.name) + '">' +
+      '<div class="tc-top"><span class="tc-time">' + esc(t.timeLabel) + '</span>' + chip(b.short, b.chip) + '</div>' +
+      '<div class="tc-name">' + esc(t.name) + '</div><div class="tc-sub">' + (t.pax || '?') + ' pers · ' + esc(drankLabel(t)) + ' · ' + esc(t.opstap || '—') + '</div>' + flagsHtml(t) + '</button>';
+  }
+  function alfCard(a) {
+    return '<button class="alfc' + (a.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(a.id) + '"><div class="alfc-t"><span>Light Festival ' + esc(a.start || '') + '</span><span>' + (a.cap ? a.booked + '/' + a.cap : esc(a.note || '')) + '</span></div>' + (a.cap ? bar(a.booked, a.cap) : '') + '</button>';
+  }
+  function dayList(date) {
+    var it = dayItems(date);
+    if (!it.length) return '<div class="empty">Geen tochten op deze dag.<br><button class="save" data-act="newon:' + date + '">+ Tocht toevoegen</button></div>';
+    return '<div class="dlist">' + it.map(function (x) { return x.kind === 'alf' ? alfCard(x) : tripCard(x); }).join('') + '</div>';
+  }
+  function rightPanel(scopeTrips, style) {
+    if (S.panel === 'form') return style === 'week' ? formHtml(false) : '<div class="dpad">' + formHtml(false) + '</div>';
+    if (S.panel === 'schippers') return schippersPanel(scopeTrips);
+    var t = findItem(S.sel);
+    if (t) return style === 'week' ? detailWeek(t) : detailAgenda(t);
+    return null;
+  }
+  function monthHtml() {
+    var a = S.anchor, T = todayIso();
+    var inM = function (x) { return x.date.slice(0, 7) === a.slice(0, 7); };
+    var mT = DATA ? DATA.trips.filter(inM) : [], mA = DATA ? DATA.alfs.filter(inM) : [];
+    var confs = DATA ? DATA.conflicts.filter(function (c) { return inM(c) && c.date >= T; }) : [];
+    var noSk = mT.filter(function (t) { return t.upcoming && t.noSkipper; }).length;
+    function lrow(key, swatch, label, n) {
+      return '<button class="lrow' + (S.boat === key ? ' on' : '') + '" data-act="boat:' + key + '"><span><span class="sw" style="background:' + swatch + '"></span>' + label + '</span><span class="n">' + n + '</span></button>';
+    }
+    var cnt = function (k) { return mT.filter(function (t) { return (t.boat || 'none') === k; }).length; };
+    var up = mT.filter(function (t) { return t.upcoming; });
+    var aside = '<aside class="aside">' +
+      '<div class="card"><div class="ctitle">Boten</div><div class="legend">' + lrow('zaza', '#1F5E63', 'Zaza', cnt('zaza')) + lrow('mosi', '#C2662D', 'Mosi Jo', cnt('mosi')) + lrow('none', '#B9AFA2', 'Boot nog kiezen', cnt('none')) + lrow('alf', '#5A63B8', 'Light Festival tickets', mA.length) + '</div></div>' +
+      '<div class="card"><div class="ctitle">Status</div><div class="legend" style="gap:8px;font-size:13px">' +
+      '<div style="display:flex;justify-content:space-between"><span style="display:flex;align-items:center;gap:8px"><span class="dt" style="background:#2F8A4E"></span>Bevestigd</span><span class="n" style="color:var(--mut)">' + mT.filter(function (t) { return t.status === 'Bevestigd'; }).length + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between"><span style="display:flex;align-items:center;gap:8px"><span class="dt" style="background:#D98A1F"></span>Optie / offerte</span><span style="color:var(--mut)">' + mT.filter(function (t) { return t.status !== 'Bevestigd'; }).length + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between"><span style="display:flex;align-items:center;gap:8px"><span class="dt" style="background:#C0392B"></span>Geen schipper</span><span style="color:var(--mut)">' + up.filter(function (t) { return t.noSkipper; }).length + '</span></div>' +
+      '</div></div>' +
+      '<div class="card"><div class="ctitle">' + cap(NL_MON[mi(a)]) + ' in cijfers</div><div class="stats"><div class="stat"><div class="l">Tochten</div><div class="v">' + mT.length + '</div></div><div class="stat"><div class="l">Gasten</div><div class="v">' + mT.reduce(function (s, t) { return s + (t.pax || 0); }, 0) + '</div></div></div></div>' +
+      '<button class="linkbtn" data-act="logout">Uitloggen</button>' +
+      '</aside>';
+    var title = S.view === 'day' ? longDate(a) : cap(NL_MON[mi(a)]) + ' ' + yr(a);
+    var body = !DATA ? '<div class="boot" style="min-height:300px"><div class="spin"></div>Planning laden…</div>' : (S.view === 'day' ? dayList(a) : calHtml());
+    var rp = DATA ? rightPanel(mT, 'agenda') : null;
+    return '<div class="wrap"><div class="inner">' + hdrAgenda() + errBar() + (DATA ? alertBar(confs, noSk) : '') +
+      '<div class="cols">' + aside + '<main class="main">' + toolbar(title) + body + '</main>' +
+      (rp ? '<section class="det">' + rp + '</section>' : '') + '</div></div></div>';
+  }
+
+  /* ---------- laptop: weekoverzicht ---------- */
+  function weekHtml() {
+    var ws = wkStart(S.anchor), we = add(ws, 6), T = todayIso();
+    var days = []; for (var i = 0; i < 7; i++) days.push(add(ws, i));
+    var inW = function (x) { return x.date >= ws && x.date <= we; };
+    var wT = DATA ? DATA.trips.filter(inW) : [], wA = DATA ? DATA.alfs.filter(inW) : [];
+    var wAll = DATA ? (DATA.raw.alf || []).filter(inW) : [];
+    var confs = DATA ? DATA.conflicts.filter(inW) : [];
+    var noSk = wT.filter(function (t) { return t.upcoming && t.noSkipper; }).length;
+    var alfSold = wAll.reduce(function (s, a) { return s + (a.booked || 0); }, 0);
+    function wp(v, l, on) { return '<button class="wpill' + (on ? ' on' : '') + '" data-act="' + v + '">' + l + '</button>'; }
+    var hdr = '<header class="card hdr wk"><div class="brand" style="gap:12px;margin-right:8px"><div class="logo lg">ABC</div><div class="brand-c"><span class="sg t">Amsterdam Boat Company</span><span class="m12">Planning · week ' + isoWeek(ws) + ' · ' + esc(weekRange(ws)) + '</span></div></div>' +
+      '<div class="pills" style="gap:8px">' + wp('view:week', 'Week', S.filter === 'all' || S.filter === 'schippers') + wp('view:month', 'Maand', false) + wp('filter:alf', 'Light Festival', S.filter === 'alf') + wp('filter:offertes', 'Offertes', S.filter === 'offertes') + wp('filter:schippers', 'Schippers', S.panel === 'schippers') + '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+      (noSk ? '<button class="hchip" style="background:#FBE3DF;color:#8A2A1C" data-act="problems">' + plural(noSk, 'tocht', 'tochten') + ' zonder schipper</button>' : '') +
+      (confs.length ? '<button class="hchip" style="background:#FDEBD3;color:#7A4508" data-act="problems">' + plural(confs.length, 'bootconflict', 'bootconflicten') + '</button>' : '') +
+      (S.problems ? '<button class="hchip" style="background:var(--ink);color:var(--card)" data-act="problems">Toon alles</button>' : '') +
+      '<button class="btn-new t" data-act="new">+ Nieuwe tocht</button></div></header>';
+    var perDay = days.map(function (d) { var n = wT.filter(function (t) { return t.date === d; }).length; return n ? NL_DOW_S[dow(d)] + ' ' + n : ''; }).filter(Boolean).join(' · ');
+    var kpis = '<section class="kpis">' +
+      '<div class="kpi"><div class="l">Privétochten deze week</div><div class="v">' + wT.length + '</div><div class="s">' + esc(perDay || 'geen tochten') + '</div></div>' +
+      '<div class="kpi"><div class="l">Gasten aan boord</div><div class="v">' + (wT.reduce(function (s, t) { return s + (t.pax || 0); }, 0) + alfSold) + '</div><div class="s">privé + losse tickets</div></div>' +
+      '<div class="kpi"><div class="l">Light Festival tickets</div><div class="v">' + alfSold + '</div><div class="s">verkocht deze week</div></div>' +
+      '<div class="kpi"><div class="l">Omzet week</div><div class="v" style="color:var(--mut2)">—</div><div class="s">nog niet gekoppeld</div></div></section>';
+    var cols = days.map(function (d) {
+      var items = DATA ? dayItems(d) : [];
+      var trips = items.filter(function (x) { return x.kind !== 'alf'; }), alfs = items.filter(function (x) { return x.kind === 'alf'; });
+      return '<div class="wday' + (dow(d) >= 5 ? ' we' : '') + '"><button class="wday-h' + (d === T ? ' today' : '') + '" data-act="day:' + d + '"><span class="d">' + cap(NL_DOW[dow(d)]) + '</span><span class="n">' + dn(d) + ' ' + NL_MON_S[mi(d)] + '</span></button>' +
+        (!items.length ? '<button class="noday" style="border:0;background:transparent;text-align:left;cursor:pointer" data-act="newon:' + d + '">Geen tochten · + toevoegen</button>' : '') +
+        trips.map(function (t) {
+          var b = BOAT[bk(t)];
+          return '<button class="wcard' + (t.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(t.id) + '" aria-label="Open tocht ' + esc(t.name) + '"><div class="wc-top"><span class="wc-time">' + esc(t.timeLabel) + '</span>' + chip(b.short, b.chip) + '</div>' +
+            '<div class="wc-name">' + esc(t.name) + '</div><div class="wc-sub">' + (t.pax || '?') + ' pers · ' + esc(drankLabel(t)) + '</div>' + flagsHtml(t) + '</button>';
+        }).join('') +
+        alfs.map(function (a) { return '<button class="walf' + (a.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(a.id) + '"><div class="b">Light Festival ' + esc(a.start || '') + '</div><div>' + (a.cap ? a.booked + '/' + a.cap + ' tickets' : esc(a.note || '')) + '</div></button>'; }).join('') +
+        '</div>';
+    }).join('');
+    var rp = DATA ? rightPanel(wT, 'week') : null;
+    var main = '<section class="wsec"><div class="wmain"><div class="wmain-h"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><h2 class="sg">Weekplanning</h2>' +
+      '<button class="rb rnd" data-act="nav:-1" aria-label="Vorige week">‹</button><button class="rb" data-act="nav:0">Deze week</button><button class="rb rnd" data-act="nav:1" aria-label="Volgende week">›</button>' + (LOADING ? '<span class="loadtxt">laden…</span>' : '') + '</div>' +
+      '<div class="leg"><span><i style="background:#1F5E63"></i>Zaza</span><span><i style="background:#C2662D"></i>Mosi Jo</span><span><i style="background:#B9AFA2"></i>Boot nog kiezen</span><span><i style="background:#5A63B8"></i>Light Festival</span></div></div>' +
+      '<div style="overflow-x:auto"><div class="wgrid">' + cols + '</div></div></div>' +
+      '<aside class="waside">' + (rp != null ? (S.panel === 'schippers' ? rp.replace('class="dpad"', 'class=""') : rp) : '<div class="hint">Klik op een tocht om alle details te zien.</div>') + '</aside></section>';
+    // onderste rij
+    var noBoat = wT.filter(function (t) { return t.upcoming && !t.boat; }).length;
+    var boatCard = function (k, extra) {
+      var B = BOAT[k], n = wT.filter(function (t) { return t.boat === k; }).length;
+      var c = confs.filter(function (x) { return x.boat === k; });
+      var line = c.length ? c.map(function (x) { return cap(NL_DOW_S[dow(x.date)]) + ' ' + dn(x.date) + '/' + (mi(x.date) + 1) + ': ' + first(x.a.name) + ' en ' + first(x.b.name) + ' overlappen (' + x.a.start + ' / ' + x.b.start + ')'; }).join('; ')
+        : 'Deze week ' + plural(n, 'tocht', 'tochten') + ' ingepland' + (extra || '');
+      return '<button class="boatb lrow" style="background:' + B.box[0] + ';width:100%;margin:0;display:block;padding:12px 14px;border-radius:16px" data-act="boat:' + k + '"><div class="t"><span class="b" style="color:' + B.box[1] + '">' + B.label + '</span><span style="font-size:12px;color:' + B.box[1] + '">' + B.info + '</span></div><div class="s" style="color:' + B.box[2] + '">' + esc(line) + '</div></button>';
+    };
+    var shifts = wAll.filter(function (a) { return a.booked > 0; });
+    var bottom = '<section class="bottom">' +
+      '<div class="bcard"><h3 class="sg">Boten</h3><div style="display:flex;flex-direction:column;gap:10px">' + boatCard('zaza', noBoat ? ' · ' + noBoat + ' nog zonder boot' : '') + boatCard('mosi') + '</div></div>' +
+      '<div class="bcard"><h3 class="sg">Light Festival bezetting</h3><div style="display:flex;flex-direction:column;gap:10px">' +
+      (shifts.length ? shifts.map(function (a) {
+        var pct = a.cap ? Math.round(a.booked / a.cap * 100) : 0;
+        return '<div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="font-weight:600">' + cap(NL_DOW_S[dow(a.date)]) + ' ' + dn(a.date) + '/' + (mi(a.date) + 1) + ' · ' + esc(a.start) + '</span><span style="color:#4A433A">' + a.booked + '/' + (a.cap || '?') + '</span></div><div class="sbar"><div style="width:' + Math.min(pct, 100) + '%;background:' + (pct >= 80 ? '#C2662D' : '#1F5E63') + '"></div></div></div>';
+      }).join('') : '<div class="m12" style="font-size:13px">Deze week nog geen losse tickets verkocht.</div>') +
+      '</div></div>' +
+      '<div class="bcard"><h3 class="sg">Aandachtspunten</h3><div style="display:flex;flex-direction:column;gap:8px">' + todoHtml(todoList(wT, confs), 7) + '</div></div></section>';
+    return '<div class="wrap" style="padding:24px 28px 48px"><div class="inner wk">' + hdr + errBar() + kpis + main + bottom + '</div></div>';
+  }
+
+  /* ---------- mobiel ---------- */
+  function mobileHtml() {
+    var ws = wkStart(S.anchor), we = add(ws, 6), cur = S.anchor, T = todayIso();
+    var inW = function (x) { return x.date >= ws && x.date <= we; };
+    var wT = DATA ? DATA.trips.filter(inW) : [];
+    var confs = DATA ? DATA.conflicts.filter(inW) : [];
+    var noSk = wT.filter(function (t) { return t.upcoming && t.noSkipper; }).length;
+    var nextAlf = DATA ? (DATA.raw.alf || []).filter(function (a) { return inW(a) && a.booked > 0 && a.date >= T; }).sort(function (a, b) { return a.date < b.date ? -1 : 1; })[0] : null;
+    var top = '<div class="mtop"><div style="display:flex;align-items:center;gap:10px"><div class="logo">ABC</div><div><div class="sg" style="font-weight:700;font-size:17px">Planning</div><div class="m12">' +
+      (S.mMonth ? cap(NL_MON[mi(cur)]) + ' ' + yr(cur) : 'Week ' + isoWeek(ws) + ' · ' + esc(weekRangeShort(ws))) + (LOADING ? ' · laden…' : '') + '</div></div></div>' +
+      '<div class="mtop-r"><button class="mbtn r" data-act="nav:-1" aria-label="Vorige">‹</button><button class="mbtn r" data-act="nav:1" aria-label="Volgende">›</button><button class="mbtn' + (S.mMonth ? ' on' : '') + '" data-act="mmonth" aria-label="Maandoverzicht">Maand</button></div></div>';
+    var chips = '<div class="mchips">' +
+      (noSk ? '<button style="background:#FBE3DF;color:#8A2A1C" data-act="problems">' + noSk + ' zonder schipper</button>' : '') +
+      (confs.length ? '<button style="background:#FDEBD3;color:#7A4508" data-act="problems">' + plural(confs.length, 'bootconflict', 'bootconflicten') + '</button>' : '') +
+      (nextAlf ? '<button style="background:#EEF0FB;color:#2E3A86" data-act="day:' + nextAlf.date + '">ALF ' + NL_DOW_S[dow(nextAlf.date)] + ' ' + nextAlf.booked + '/' + (nextAlf.cap || '?') + '</button>' : '') +
+      (S.problems ? '<button style="background:var(--ink);color:var(--card)" data-act="problems">Toon alles</button>' : '') +
+      (cur !== T ? '<button style="background:var(--card);color:var(--ink)" data-act="nav:0">Vandaag</button>' : '') +
+      '</div>';
+    var body;
+    if (!DATA) {
+      body = '<div class="boot" style="min-height:300px"><div class="spin"></div>Planning laden…</div>';
+    } else if (S.mMonth) {
+      var gs = grStart(cur), rows = Math.ceil((dow(moStart(cur)) + dim(cur)) / 7), cells = '';
+      for (var i = 0; i < rows * 7; i++) {
+        var d = add(gs, i), inM = d.slice(0, 7) === cur.slice(0, 7);
+        var its = inM ? dayItems(d) : [];
+        var dots = its.slice(0, 4).map(function (x) { return '<i style="background:' + BOAT[bk(x)].dot + '"></i>'; }).join('');
+        cells += '<button class="mm-d' + (inM ? '' : ' out') + (d === cur ? ' on' : '') + (d === T ? ' today' : '') + '" data-act="day:' + d + '" aria-label="' + esc(longDate(d)) + '">' + dn(d) + '<span class="mm-dots">' + dots + '</span></button>';
+      }
+      body = '<div class="mmonth"><div class="mm-g">' + NL_DOW_S.map(function (w) { return '<div class="w">' + w.toUpperCase() + '</div>'; }).join('') + cells + '</div></div>';
+    } else {
+      var strip = '<div class="strip">';
+      for (var j = 0; j < 7; j++) {
+        var dd = add(ws, j), has = dayItems(dd).length > 0, on = dd === cur;
+        strip += '<button class="sday' + (on ? ' on' : '') + (dd === T ? ' today' : '') + '" data-act="day:' + dd + '" aria-label="' + esc(longDate(dd)) + '"><span class="a">' + cap(NL_DOW_S[j]) + '</span><span class="n">' + dn(dd) + '</span><i style="background:' + (has ? (on ? '#F2C49B' : '#C2662D') : 'transparent') + '"></i></button>';
+      }
+      strip += '</div>';
+      var items = dayItems(cur), trips = items.filter(function (x) { return x.kind !== 'alf'; }), alfs = items.filter(function (x) { return x.kind === 'alf'; });
+      var pax = trips.reduce(function (s, t) { return s + (t.pax || 0); }, 0);
+      body = strip +
+        '<div class="mday-h"><h2 class="sg">' + esc(dayMonth(cur)) + '</h2><span class="m12">' + plural(trips.length, 'tocht', 'tochten') + ' · ' + pax + ' gasten</span></div>' +
+        (!items.length ? '<div class="empty" style="background:var(--card)">Geen tochten op deze dag.<br><button class="save" data-act="newon:' + cur + '">+ Tocht toevoegen</button></div>' : '') +
+        trips.map(tripCard).join('') + alfs.map(alfCard).join('') +
+        '<div class="mcard"><div class="h sg">Aandachtspunten deze week</div><div style="display:flex;flex-direction:column;gap:8px">' + todoHtml(todoList(wT, confs), 5) + '</div></div>' +
+        '<button class="linkbtn" data-act="logout">Uitloggen</button>';
+    }
+    var overlay = '';
+    if (S.panel === 'form') {
+      overlay = '<div class="ov" data-act="closeform"><div class="sheet" data-act="noop"><div class="grab"></div>' + formHtml(true) + '</div></div>';
+    } else if (S.sel && findItem(S.sel)) {
+      overlay = '<div class="ov" data-act="close"><div class="sheet" data-act="noop"><div class="grab"></div>' + sheetDetail(findItem(S.sel)) + '</div></div>';
+    }
+    return '<div class="mwrap">' + top + errBar() + chips + body + '</div>' +
+      '<button class="fab" data-act="new" aria-label="Nieuwe tocht toevoegen">+ Nieuwe tocht</button>' + overlay;
+  }
+  function sheetDetail(t) {
+    if (t.kind === 'alf') return alfDetail(t).replace('class="dpad"', 'class=""');
+    return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><div class="m12">' + esc(dayMonth(t.date)) + ' · ' + esc(t.timeLabel) + '</div><div class="sg" style="font-weight:700;font-size:24px">' + esc(t.name) + '</div><div style="margin-top:6px">' + statusChip(t) + '</div></div>' + '<button class="x" style="width:40px;height:40px" data-act="close" aria-label="Sluiten">×</button></div>' +
+      '<div class="tiles"><div class="tile"><div class="l">Gasten</div><div class="v" style="font-size:17px">' + (t.pax || '—') + '</div></div><div class="tile"><div class="l">Boot</div><div class="v" style="font-size:17px">' + esc(BOAT[bk(t)].label) + '</div></div>' +
+      '<div class="tile"><div class="l">Drank</div><div class="v2">' + esc(drankLabel(t)) + '</div></div><div class="tile"><div class="l">Hapjes</div><div class="v2">' + esc(t.hapjes ? cap(t.hapjes) : '—') + '</div></div></div>' +
+      '<div class="rows"><div><span>Opstap</span>' + locHtml(t.opstap) + '</div><div><span>Afstap</span>' + locHtml(t.afstap) + '</div><div><span>Schipper</span><span>' + esc(t.schipper || 'Nog niet ingedeeld') + '</span></div><div><span>Telefoon</span>' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : '<span>Ontbreekt</span>') + '</div>' + (t.source ? '<div><span>Bron</span><span>' + esc(t.source) + '</span></div>' : '') + '</div>' +
+      '<div class="nbox">' + esc(t.notes || '—') + '</div>' +
+      conflictBox(t) +
+      waButtons(t).replace(/class="abtn/g, 'style="padding:14px;font-size:14px" class="abtn') +
+      '<div class="acts"><button class="abtn ghost" data-act="edit">' + (t.schipper ? 'Bewerken' : 'Schipper indelen') + '</button><a class="abtn ghost" href="' + esc(sheetLink(t)) + '" target="_blank" rel="noopener">Open in sheet</a></div>' + delBtn(t);
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    S.mobile = window.innerWidth < 760;
+    var app = document.getElementById('app');
+    var scroller = document.querySelector('.sheet');
+    var keep = scroller ? scroller.scrollTop : 0;
+    if (!DATA && ERR === 'AUTH') {
+      app.innerHTML = loginHtml();
+      return;
+    }
+    if (!DATA && ERR && !LOADING) {
+      app.innerHTML = '<div class="boot"><div style="max-width:420px;text-align:center">Kon de planning niet laden.<br><span class="m12">' + esc(ERR) + '</span></div><button class="save" data-act="refresh" style="padding:10px 18px">Opnieuw proberen</button></div>';
+      return;
+    }
+    app.innerHTML = S.mobile ? mobileHtml() : (S.view === 'week' ? weekHtml() : monthHtml());
+    var sc = document.querySelector('.sheet');
+    if (sc && keep) sc.scrollTop = keep;
+    var f = document.getElementById('tripForm');
+    if (f) checkFormConflict(f);
+  }
+  function loginHtml() {
+    return '<div class="login"><div class="login-card"><div class="logo">ABC</div><h1 class="sg">ABC Planning</h1>' +
+      '<p>Log in met het Google-account waarmee je de planning van Amsterdam Boat Company gebruikt.</p>' +
+      '<button class="gbtn" data-act="login">Inloggen met Google</button>' +
+      '<p style="font-size:12px">Alleen accounts met toegang tot de planning-sheet kunnen de planning zien.</p></div></div>';
+  }
+  var toastTimer = null;
+  function toast(msg) {
+    var el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2600);
+  }
+
+  /* ---------- acties ---------- */
+  function setAnchor(d) {
+    var oldKey = rangeKey();
+    S.anchor = d;
+    if (rangeKey() !== oldKey) load(false); else render();
+  }
+  function act(a) {
+    var i = a.indexOf(':'), k = i < 0 ? a : a.slice(0, i), v = i < 0 ? '' : a.slice(i + 1);
+    switch (k) {
+      case 'noop': return;
+      case 'sel': S.confirmDel = null; S.sel = v; S.panel = null; S.editing = null; render(); return;
+      case 'close':
+        S.confirmDel = null; S.sel = null; if (S.panel === 'schippers') { S.filter = 'all'; S.skipper = null; } S.panel = null; S.editing = null; render(); return;
+      case 'closeform': S.panel = null; S.editing = null; FORM_ERR = null; render(); return;
+      case 'new': S.newDate = null; S.panel = 'form'; S.editing = null; FORM_ERR = null; S.sel = null; render(); focusFirst(); return;
+      case 'newon': S.newDate = v; S.panel = 'form'; S.editing = null; FORM_ERR = null; S.sel = null; render(); focusFirst(); return;
+      case 'edit': var t = findItem(S.sel); if (!t || t.kind === 'alf') return; S.editing = t; S.panel = 'form'; FORM_ERR = null; render(); return;
+      case 'view': S.view = v; if (S.filter === 'schippers' && v !== 'week' && S.panel !== 'schippers') S.filter = 'all'; render(); return;
+      case 'day':
+        if (S.mobile) { S.mMonth = false; S.sel = null; setAnchor(v); return; }
+        S.view = 'day'; setAnchor(v); return;
+      case 'nav':
+        var n = +v;
+        if (n === 0) { S.mMonth = S.mMonth && false; setAnchor(todayIso()); return; }
+        if (S.mobile) { setAnchor(S.mMonth ? (function () { var m = addMonths(S.anchor, n); return m.slice(0, 7) === todayIso().slice(0, 7) ? todayIso() : m; })() : add(S.anchor, 7 * n)); return; }
+        if (S.view === 'month') { var m2 = addMonths(S.anchor, n); setAnchor(m2.slice(0, 7) === todayIso().slice(0, 7) ? todayIso() : m2); return; }
+        setAnchor(add(S.anchor, S.view === 'week' ? 7 * n : n)); return;
+      case 'filter':
+        if (v === 'all') { S.filter = 'all'; S.boat = null; S.skipper = null; S.problems = false; if (S.panel === 'schippers') S.panel = null; }
+        else if (v === 'schippers') { if (S.panel === 'schippers') { S.panel = null; S.filter = 'all'; S.skipper = null; } else { S.filter = 'schippers'; S.panel = 'schippers'; S.sel = null; } }
+        else { S.filter = S.filter === v ? 'all' : v; if (S.panel === 'schippers') { S.panel = null; S.skipper = null; } }
+        render(); return;
+      case 'boat': S.boat = S.boat === v ? null : v; render(); return;
+      case 'skipper': S.skipper = S.skipper === v ? null : v; render(); return;
+      case 'problems': S.problems = !S.problems; render(); return;
+      case 'mmonth': S.mMonth = !S.mMonth; render(); return;
+      case 'refresh': CACHE = {}; ERR = null; load(true); return;
+      case 'login':
+        ABC.signIn().then(function () { ERR = null; CACHE = {}; load(true); }, function (e) { ERR = 'AUTH'; render(); toast(e.message); });
+        return;
+      case 'logout':
+        ABC.signOut(); DATA = null; CACHE = {}; ERR = 'AUTH'; S.sel = null; S.panel = null; render(); return;
+      case 'del':
+        if (DELETING) return;
+        var dx = findItem(v);
+        if (!dx || dx.kind === 'alf') return;
+        if (S.confirmDel !== v) { S.confirmDel = v; render(); return; }
+        if (!ABC.authValid()) { ABC.signIn().then(function () { act(a); }, function (e) { toast(e.message); }); return; }
+        DELETING = true; render();
+        ABC.run()
+          .withSuccessHandler(function () { DELETING = false; S.confirmDel = null; S.sel = null; CACHE = {}; toast('Tocht verwijderd uit de planning'); load(true); })
+          .withFailureHandler(function (err) { DELETING = false; S.confirmDel = null; toast((err && err.message) || 'Verwijderen is niet gelukt'); render(); })
+          .deleteTrip(dx.id, dx.klantRaw);
+        return;
+    }
+  }
+  function focusFirst() {
+    if (S.mobile) return;
+    var el = document.querySelector('#tripForm input[name="naam"]');
+    if (el) el.focus();
+  }
+
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]');
+    if (!el) return;
+    if (el.tagName === 'A') return;
+    var a = el.getAttribute('data-act');
+    if (a === 'noop') return;
+    if (a === 'closeform' && el.classList.contains('ov') && e.target !== el) return;
+    if (a === 'close' && el.classList.contains('ov') && e.target !== el) return;
+    e.preventDefault();
+    act(a);
+  });
+  document.addEventListener('input', function (e) {
+    var f = e.target.form;
+    if (f && f.id === 'tripForm') checkFormConflict(f);
+  });
+  document.addEventListener('change', function (e) {
+    var f = e.target.form;
+    if (f && f.id === 'tripForm') checkFormConflict(f);
+  });
+  document.addEventListener('submit', function (e) {
+    if (e.target.id !== 'tripForm') return;
+    e.preventDefault();
+    if (SAVING) return;
+    var el = e.target.elements;
+    var f = {
+      datum: el.datum.value, start: el.start.value, end: el.end.value, naam: el.naam.value.trim(), tel: el.tel.value.trim(),
+      pax: el.pax.value, drank: el.drank.value, hapjes: el.hapjes.value.trim(), opstap: el.opstap.value.trim(), afstap: el.afstap.value.trim(),
+      boot: el.boot.value, schipper: el.schipper.value, status: el.status.value, notes: el.notes.value.trim(), en: el.en.checked
+    };
+    var problem = !f.datum ? 'Kies een datum.' : (!f.naam ? 'Vul de naam van de klant in.' : (!f.start ? 'Vul een begintijd in.' : ''));
+    if (problem) { showFormErr(problem); return; }
+    if (S.editing) { f.id = S.editing.id; f.origKlant = S.editing.klantRaw; }
+    SAVING = true; FORM_ERR = null;
+    var btn = e.target.querySelector('.save'); if (btn) { btn.disabled = true; btn.textContent = 'Opslaan…'; }
+    (ABC.authValid() ? Promise.resolve() : ABC.signIn()).then(function () { ABC.run()
+      .withSuccessHandler(function (res) {
+        SAVING = false; S.panel = null; S.editing = null; FORM_ERR = null;
+        CACHE = {}; S.anchor = res.datum; S.sel = res.id;
+        if (!S.mobile && S.view === 'day') S.view = 'day';
+        toast('Tocht opgeslagen in de planning');
+        load(true);
+      })
+      .withFailureHandler(function (err) {
+        SAVING = false;
+        showFormErr((err && err.message) || String(err));
+      })
+      .saveTrip(f);
+    }, function (err) { SAVING = false; showFormErr(err.message); });
+  });
+  function showFormErr(msg) {
+    FORM_ERR = msg;
+    var form = document.getElementById('tripForm');
+    if (!form) { render(); return; }
+    var box = form.querySelector('.ferr');
+    if (!box) { box = document.createElement('div'); box.className = 'ferr'; form.insertBefore(box, form.querySelector('.fg')); }
+    box.textContent = msg;
+    var btn = form.querySelector('.save'); if (btn) { btn.disabled = false; btn.textContent = 'Tocht opslaan'; }
+    box.scrollIntoView({ block: 'nearest' });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && (S.sel || S.panel)) act(S.panel === 'form' ? 'closeform' : 'close');
+  });
+  var wasMobile = null, rT = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(rT);
+    rT = setTimeout(function () {
+      var m = window.innerWidth < 760;
+      if (m !== wasMobile && S.panel !== 'form') { wasMobile = m; render(); }
+    }, 150);
+  });
+  function maybeRefresh() {
+    if (!ABC.authValid()) return;
+    if (document.hidden || S.panel === 'form' || LOADING) return;
+    if (Date.now() - LOADED_AT > 60000) { CACHE = {}; load(true); }
+  }
+  document.addEventListener('visibilitychange', maybeRefresh);
+  window.addEventListener('focus', maybeRefresh);
+  setInterval(maybeRefresh, 5 * 60 * 1000);
+
+  // test-haak (geen invloed op de web-app)
+  window.__abc = { S: S, prep: prep, setData: function (d) { DATA = prep(d); CACHE[rangeKey()] = DATA; }, render: render, act: act, waKlant: waKlant, waSchipper: waSchipper, findItem: findItem };
+
+  wasMobile = window.innerWidth < 760;
+  load(false);
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); }); }
+</script>
+</body>
+</html>
