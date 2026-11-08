@@ -596,11 +596,21 @@ body{padding-top:env(safe-area-inset-top)}
   try { var wxs = JSON.parse(localStorage.getItem('abc_wx') || 'null'); if (wxs && Date.now() - wxs.at < 6 * 3600e3) { WX = wxs.data; WX_AT = wxs.at; } } catch (e) { /* */ }
   function loadWeather(force) {
     if (!force && WX && Date.now() - WX_AT < 30 * 60e3) return;
-    var url = 'https://api.open-meteo.com/v1/forecast?latitude=52.3728&longitude=4.8936&timezone=Europe%2FAmsterdam&forecast_days=16' +
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude=52.3728&longitude=4.8936&timezone=Europe%2FAmsterdam&forecast_days=16&models=knmi_seamless,best_match' +
       '&hourly=temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m' +
       '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_gusts_10m_max';
     fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       if (!j || !j.hourly || !j.daily) return;
+      // KNMI-model eerst; waar dat (nog) geen waarde heeft het standaardmodel
+      ['hourly', 'daily'].forEach(function (g) {
+        var o = j[g];
+        Object.keys(o).forEach(function (k) {
+          var m = k.match(/^(.*)_knmi_seamless$/);
+          if (!m) return;
+          var a = o[k], b = o[m[1] + '_best_match'] || [];
+          o[m[1]] = a.map(function (v, i) { return v != null ? v : (b[i] != null ? b[i] : null); });
+        });
+      });
       var d = { day: {}, hour: {} };
       j.daily.time.forEach(function (t, i) {
         d.day[t] = { code: j.daily.weather_code[i], tmax: j.daily.temperature_2m_max[i], tmin: j.daily.temperature_2m_min[i], p: j.daily.precipitation_probability_max[i], mm: j.daily.precipitation_sum[i], gust: j.daily.wind_gusts_10m_max[i] };
