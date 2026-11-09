@@ -284,6 +284,32 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .wxline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
 .cell-wx{display:flex;align-items:center;gap:2px;font-size:10px;color:var(--mut2);margin:-2px 0 3px}
 .wday-wx{padding:0 4px 2px;display:flex;justify-content:space-between;align-items:center}
+.dpov{position:fixed;inset:0;background:rgba(30,27,22,.38);display:flex;align-items:flex-start;justify-content:center;z-index:30;padding:6vh 20px 20px;overflow-y:auto}
+.dpcard{background:var(--card);border-radius:22px;width:100%;max-width:820px;box-shadow:var(--sh3);padding:20px 22px 22px;display:flex;flex-direction:column;gap:16px}
+.dp-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.dp-h h2{margin:0;font-size:26px}
+.dp-sub{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:6px;font-size:13px;color:var(--mut)}
+.dp-acts{display:flex;gap:8px;flex-wrap:wrap}
+.tl{border:1px solid var(--line);border-radius:16px;padding:10px 12px 6px;overflow-x:auto}
+.tl-in{min-width:560px}
+.tl-axis{display:flex;margin-left:92px;position:relative;height:18px}
+.tl-axis span{position:absolute;transform:translateX(-50%);font-size:10px;color:var(--mut2)}
+.tl-row{display:flex;align-items:center;min-height:34px;border-top:1px dashed var(--line)}
+.tl-lab{width:92px;flex:none;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.tl-track{position:relative;flex:1;height:30px}
+.tl-blk{position:absolute;top:3px;height:24px;border-radius:7px;border:0;padding:0 6px;font-size:11px;font-weight:600;color:var(--ink);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;cursor:pointer}
+.tl-blk.cf{box-shadow:inset 0 0 0 2px #C2662D}
+.tl-blk.on{box-shadow:inset 0 0 0 2px var(--ink)}
+.dp-list{display:flex;flex-direction:column;gap:8px}
+.dp-row{display:grid;grid-template-columns:118px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;border:2px solid transparent;border-radius:14px;padding:10px 12px;background:var(--soft);color:var(--ink)}
+.dp-row:hover{border-color:var(--bd)}
+.dp-row.on{border-color:var(--ink)}
+.dp-time{font-weight:700;font-size:15px}
+.dp-name{font-weight:700;font-size:15px}
+.dp-meta{font-size:12px;color:var(--mut);margin-top:2px}
+.dp-row .flags{margin-top:6px}
+.dp-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+@media (max-width:700px){.dp-row{grid-template-columns:1fr}.dp-right{align-items:flex-start;flex-direction:row}}
 .linkbtn{border:0;background:transparent;color:var(--mut);font-size:12px;text-decoration:underline;padding:4px;align-self:flex-start}
 body{padding-top:env(safe-area-inset-top)}
 @media (max-width:900px){.aside{max-width:none}.det{max-width:none}}
@@ -860,7 +886,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
   function evHtml(x) {
     var b = BOAT[bk(x)], label = x.kind === 'alf' ? alfLabel(x) : x.name;
-    return '<button class="ev' + (x.id === S.sel ? ' on' : '') + '" style="background:' + b.bg + '" data-act="sel:' + esc(x.id) + '" aria-label="Open ' + esc(label) + '">' +
+    return '<button class="ev' + (x.id === S.sel ? ' on' : '') + '" style="background:' + b.bg + '" data-act="popsel:' + esc(x.date) + '|' + esc(x.id) + '" aria-label="Open ' + esc(label) + '">' +
       '<span class="d" style="background:' + b.dot + '"></span><b>' + esc(x.start || '') + '</b><span class="lb">' + esc(label) + '</span>' +
       (x.warn ? '<span class="w" aria-label="Let op">!</span>' : '') + '</button>';
   }
@@ -871,7 +897,7 @@ body{padding-top:env(safe-area-inset-top)}
     for (var i = 0; i < rows * 7; i++) {
       var d = add(gs, i), inM = d.slice(0, 7) === a.slice(0, 7), we = i % 7 >= 5;
       var items = inM ? dayItems(d) : [];
-      cells += '<div class="cell' + (!inM ? ' out' : ' in' + (we ? ' we' : '')) + '"' + (inM ? ' data-act="newon:' + d + '"' : '') + '><div class="cell-h"><button class="num' + (d === T ? ' today' : '') + '" data-act="day:' + d + '" aria-label="' + esc(longDate(d)) + '">' + dn(d) + '</button><span style="display:flex;align-items:center;gap:4px"><span class="cnt">' + (items.length || '') + '</span>' + (inM ? '<button class="addc" data-act="newon:' + d + '" aria-label="Tocht toevoegen op ' + esc(longDate(d)) + '">+</button>' : '') + '</span></div>' +
+      cells += '<div class="cell' + (!inM ? ' out' : ' in' + (we ? ' we' : '')) + '"' + (inM ? ' data-act="daypop:' + d + '"' : '') + '><div class="cell-h"><button class="num' + (d === T ? ' today' : '') + '" data-act="daypop:' + d + '" aria-label="' + esc(longDate(d)) + '">' + dn(d) + '</button><span style="display:flex;align-items:center;gap:4px"><span class="cnt">' + (items.length || '') + '</span>' + (inM ? '<button class="addc" data-act="newon:' + d + '" aria-label="Tocht toevoegen op ' + esc(longDate(d)) + '">+</button>' : '') + '</span></div>' +
         (inM && wxDay(d) ? '<div class="cell-wx">' + wxDayHtml(d, 12) + '</div>' : '') +
         '<div class="evs">' + items.map(evHtml).join('') + '</div></div>';
     }
@@ -924,7 +950,58 @@ body{padding-top:env(safe-area-inset-top)}
     var rp = DATA ? rightPanel(mT, 'agenda') : null;
     return '<div class="wrap"><div class="inner">' + hdrAgenda() + errBar() + (DATA ? alertBar(confs, noSk) : '') +
       '<div class="cols">' + aside + '<main class="main">' + toolbar(title) + body + '</main>' +
-      (rp ? '<section class="det">' + rp + '</section>' : '') + '</div></div></div>';
+      (rp ? '<section class="det">' + rp + '</section>' : '') + '</div></div></div>' +
+      (S.dayPop && DATA ? dayPopHtml(S.dayPop) : '');
+  }
+
+  /* ---------- dag-overzicht (pop-up vanuit de maandagenda) ---------- */
+  function dayPopHtml(date) {
+    var items = DATA ? dayItems(date) : [];
+    var trips = items.filter(function (x) { return x.kind !== 'alf'; });
+    var pax = trips.reduce(function (s, t) { return s + (t.pax || 0); }, 0);
+    // tijdlijn: van 10:00 (of eerder) tot 23:00 (of later)
+    var h0 = 10, h1 = 23;
+    items.forEach(function (x) {
+      if (x.startMin != null) h0 = Math.min(h0, Math.floor(x.startMin / 60));
+      var e = x.endMin != null ? x.endMin : (x.startMin != null ? x.startMin + 90 : null);
+      if (e != null) h1 = Math.max(h1, Math.ceil(e / 60));
+    });
+    var span = (h1 - h0) * 60;
+    var pos = function (m) { return Math.max(0, Math.min(100, (m - h0 * 60) / span * 100)); };
+    var axis = '';
+    for (var h = h0; h <= h1; h++) axis += '<span style="left:' + pos(h * 60) + '%">' + p2(h) + ':00</span>';
+    var lanes = [['zaza', 'Zaza'], ['mosi', 'Mosi Jo'], ['none', 'Boot?'], ['alf', 'Light Fest.']];
+    var rows = lanes.map(function (ln) {
+      var its = items.filter(function (x) { return bk(x) === ln[0] && x.startMin != null; });
+      if (!its.length && (ln[0] === 'none' || ln[0] === 'alf')) return '';
+      var B = BOAT[ln[0]];
+      return '<div class="tl-row"><div class="tl-lab"><span class="dt" style="background:' + B.dot + '"></span>' + ln[1] + '</div><div class="tl-track">' +
+        its.map(function (x) {
+          var a = pos(x.startMin), e = pos(x.endMin != null ? x.endMin : x.startMin + 90);
+          var label = x.kind === 'alf' ? (x.cap ? x.booked + '/' + x.cap : 'ALF') : first(x.name);
+          return '<button class="tl-blk' + (x.conflict ? ' cf' : '') + (x.id === S.sel ? ' on' : '') + '" style="left:' + a + '%;width:' + Math.max(e - a, 3) + '%;background:' + B.bg + ';border-left:3px solid ' + B.dot + '" data-act="popsel:' + date + '|' + esc(x.id) + '" title="' + esc(x.timeLabel + ' · ' + (x.kind === 'alf' ? 'Light Festival' : x.name)) + '">' + esc(x.start + ' ' + label) + '</button>';
+        }).join('') + '</div></div>';
+    }).join('');
+    var list = items.map(function (x) {
+      var B = BOAT[bk(x)];
+      if (x.kind === 'alf') {
+        return '<button class="dp-row' + (x.id === S.sel ? ' on' : '') + '" style="background:#EEF0FB" data-act="popsel:' + date + '|' + esc(x.id) + '"><div class="dp-time">' + esc(x.timeLabel) + '</div>' +
+          '<div><div class="dp-name" style="color:#2E3A86">Light Festival — losse tickets</div><div class="dp-meta">' + (x.cap ? x.booked + ' van ' + x.cap + ' plekken verkocht' : esc(x.note || '')) + '</div></div><div class="dp-right">' + chip('ALF', B.chip) + '</div></button>';
+      }
+      var meta = [(x.pax || '?') + ' pers', drankLabel(x)];
+      if (x.hapjes) meta.push(cap(x.hapjes));
+      if (x.opstap) meta.push(x.opstap + (x.afstap && x.afstap !== x.opstap ? ' → ' + x.afstap : ''));
+      meta.push(x.schipper ? 'Schipper: ' + x.schipper : 'Nog geen schipper');
+      return '<button class="dp-row' + (x.id === S.sel ? ' on' : '') + '" data-act="popsel:' + date + '|' + esc(x.id) + '"><div class="dp-time">' + esc(x.timeLabel) + '</div>' +
+        '<div><div class="dp-name">' + esc(x.name) + '</div><div class="dp-meta">' + esc(meta.join(' · ')) + '</div>' + (x.notes ? '<div class="dp-meta" style="color:var(--ink)">' + esc(x.notes) + '</div>' : '') + flagsHtml(x) + '</div>' +
+        '<div class="dp-right">' + chip(B.short, B.chip) + (wxTrip(x) ? wxTripHtml(x) : '') + '</div></button>';
+    }).join('');
+    return '<div class="dpov" data-act="closepop" role="dialog" aria-modal="true" aria-label="' + esc(longDate(date)) + '"><div class="dpcard" data-act="noop">' +
+      '<div class="dp-h"><div><h2 class="sg">' + esc(longDate(date)) + '</h2><div class="dp-sub"><span>' + plural(trips.length, 'tocht', 'tochten') + ' · ' + pax + ' gasten</span>' + (wxDay(date) ? wxDayHtml(date, 15) : '') + '</div></div>' +
+      '<div class="dp-acts"><button class="btn-new" data-act="newon:' + date + '">+ Tocht toevoegen</button><button class="x" data-act="closepop" aria-label="Sluiten">×</button></div></div>' +
+      (items.length ? '<div class="tl"><div class="tl-in"><div class="tl-axis">' + axis + '</div>' + rows + '</div></div>' + '<div class="dp-list">' + list + '</div>'
+        : '<div class="empty">Geen tochten op deze dag.<br><button class="save" data-act="newon:' + date + '">+ Tocht toevoegen</button></div>') +
+      '</div></div>';
   }
 
   /* ---------- laptop: weekoverzicht ---------- */
@@ -1105,12 +1182,17 @@ body{padding-top:env(safe-area-inset-top)}
     var i = a.indexOf(':'), k = i < 0 ? a : a.slice(0, i), v = i < 0 ? '' : a.slice(i + 1);
     switch (k) {
       case 'noop': return;
+      case 'daypop': S.dayPop = v; S.sel = null; if (S.panel !== 'form') S.panel = null; render(); return;
+      case 'closepop': S.dayPop = null; render(); return;
+      case 'popsel':
+        var pi = v.indexOf('|');
+        S.dayPop = null; S.confirmDel = null; S.sel = v.slice(pi + 1); S.panel = null; S.editing = null; render(); return;
       case 'sel': S.confirmDel = null; S.sel = v; S.panel = null; S.editing = null; render(); return;
       case 'close':
         S.confirmDel = null; S.sel = null; if (S.panel === 'schippers') { S.filter = 'all'; S.skipper = null; } S.panel = null; S.editing = null; render(); return;
       case 'closeform': S.panel = null; S.editing = null; FORM_ERR = null; render(); return;
       case 'new': S.newDate = null; S.panel = 'form'; S.editing = null; FORM_ERR = null; S.sel = null; render(); focusFirst(); return;
-      case 'newon': S.newDate = v; S.panel = 'form'; S.editing = null; FORM_ERR = null; S.sel = null; render(); focusFirst(); return;
+      case 'newon': S.dayPop = null; S.newDate = v; S.panel = 'form'; S.editing = null; FORM_ERR = null; S.sel = null; render(); focusFirst(); return;
       case 'edit': var t = findItem(S.sel); if (!t || t.kind === 'alf') return; S.editing = t; S.panel = 'form'; FORM_ERR = null; render(); return;
       case 'view': S.view = v; if (S.filter === 'schippers' && v !== 'week' && S.panel !== 'schippers') S.filter = 'all'; render(); return;
       case 'day':
@@ -1164,6 +1246,7 @@ body{padding-top:env(safe-area-inset-top)}
     var a = el.getAttribute('data-act');
     if (a === 'noop') return;
     if (a === 'closeform' && el.classList.contains('ov') && e.target !== el) return;
+    if (a === 'closepop' && el.classList.contains('dpov') && e.target !== el) return;
     if (a === 'close' && el.classList.contains('ov') && e.target !== el) return;
     e.preventDefault();
     act(a);
@@ -1217,6 +1300,7 @@ body{padding-top:env(safe-area-inset-top)}
     box.scrollIntoView({ block: 'nearest' });
   }
   document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && S.dayPop) { act('closepop'); return; }
     if (e.key === 'Escape' && (S.sel || S.panel)) act(S.panel === 'form' ? 'closeform' : 'close');
   });
   var wasMobile = null, rT = null;
