@@ -597,7 +597,7 @@ body{padding-top:env(safe-area-inset-top)}
     var k = waKlant(t);
     return '<div class="acts">' +
       (k ? '<a class="abtn k" href="' + esc(k) + '" target="_blank" rel="noopener">App klant' + (t.en ? ' EN' : '') + '</a>' : '<span class="abtn off" title="Geen telefoonnummer">Geen tel. klant</span>') +
-      '<a class="abtn s" href="' + esc(waSchipper(t)) + '" target="_blank" rel="noopener">App schipper</a></div>';
+      '<a class="abtn s" href="' + esc(waSchipper(t)) + '" target="_blank" rel="noopener">App schipper</a></div>' + cardButtons(t);
   }
   function secButtons(t) {
     return '<div class="acts"><button class="abtn ghost" data-act="edit">Bewerken</button><a class="abtn ghost" href="' + esc(sheetLink(t)) + '" target="_blank" rel="noopener">Open in sheet</a></div>' + delBtn(t);
@@ -695,6 +695,218 @@ body{padding-top:env(safe-area-inset-top)}
     var d = wxDay(date);
     if (!d) return '';
     return '<span class="wx' + (d.p >= 60 ? ' rain' : '') + '">' + wxIcon(d.code, size || 13) + Math.round(d.tmax) + '°' + (d.p >= 20 ? ' · ' + d.p + '%' : '') + '</span>';
+  }
+
+  /* ---------- vaarkaart (PDF / afbeelding voor de schipper) ---------- */
+  var JSPDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  var ABC_TEL = '+31 20 250 4425';
+  var jspdfP = null, READY = null;
+  function loadJsPDF() {
+    if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+    if (!jspdfP) jspdfP = new Promise(function (res, rej) {
+      var sc = document.createElement('script');
+      sc.src = JSPDF_URL;
+      sc.onload = function () { res(window.jspdf.jsPDF); };
+      sc.onerror = function () { jspdfP = null; rej(new Error('De PDF-module kon niet laden. Controleer je internet.')); };
+      document.head.appendChild(sc);
+    });
+    return jspdfP;
+  }
+  function cardTrips(t) {
+    if (!t.schipper) return [t];
+    var k = t.schipper.trim().toLowerCase();
+    var l = DATA.trips.filter(function (x) { return x.date === t.date && (x.schipper || '').trim().toLowerCase() === k; }).sort(byStart);
+    return l.length ? l : [t];
+  }
+  function wrapText(c, text, maxW) {
+    var out = [];
+    String(text || '').split('\n').forEach(function (para) {
+      var words = para.split(/\s+/).filter(Boolean), line = '';
+      words.forEach(function (w) {
+        var test = line ? line + ' ' + w : w;
+        if (c.measureText(test).width > maxW && line) { out.push(line); line = w; } else line = test;
+      });
+      out.push(line);
+    });
+    return out.length ? out : [''];
+  }
+  function rrect(c, x, y, w, h, r, fill) {
+    c.beginPath(); c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r);
+    c.closePath(); c.fillStyle = fill; c.fill();
+  }
+  function drawCard(list) {
+    var W = 1080, M = 54, CX = M + 46, CW = W - 2 * M - 92;
+    var SG = '"Space Grotesk", Inter, sans-serif', IT = 'Inter, system-ui, sans-serif';
+    var cv = document.createElement('canvas'); cv.width = W; cv.height = 7000;
+    var c = cv.getContext('2d'), links = [];
+    c.fillStyle = '#F4EFE7'; c.fillRect(0, 0, W, cv.height);
+    var t0 = list[0], sk = (t0.schipper || '').trim(), y = M;
+
+    // kop
+    rrect(c, M, y, W - 2 * M, 200, 34, '#1F5E63');
+    rrect(c, M + 44, y + 48, 104, 104, 26, '#FFFDF9');
+    c.fillStyle = '#1F5E63'; c.font = '700 38px ' + SG; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('ABC', M + 96, y + 101);
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+    c.fillStyle = '#FFFDF9'; c.font = '700 60px ' + SG; c.fillText('Vaarkaart', M + 180, y + 102);
+    c.fillStyle = 'rgba(255,253,249,.82)'; c.font = '500 28px ' + IT; c.fillText('Amsterdam Boat Company', M + 182, y + 148);
+    y += 200 + 44;
+
+    // datum + schipper
+    c.fillStyle = '#1E1B16'; c.font = '700 54px ' + SG; c.fillText(longDate(t0.date), M + 6, y + 48);
+    c.fillStyle = '#6B6257'; c.font = '500 32px ' + IT;
+    c.fillText((sk ? 'Schipper: ' + proper(sk) : 'Schipper nog niet ingedeeld') + '  ·  ' + plural(list.length, 'tocht', 'tochten'), M + 6, y + 100);
+    y += 140;
+
+    list.forEach(function (t) {
+      var B = BOAT[bk(t)];
+      var rows = [
+        ['KLANT', t.name],
+        ['TELEFOON', t.phone ? '+' + t.phone : 'Onbekend', t.phone ? 'tel:+' + t.phone : ''],
+        ['GASTEN', (t.pax || '?') + ' personen'],
+        ['DRANK', drankLabel(t)],
+        ['HAPJES', t.hapjes ? cap(t.hapjes) : '—'],
+        ['OPSTAP', t.opstap || '—', locLink(t.opstap)],
+        ['AFSTAP', t.afstap || '—', locLink(t.afstap)]
+      ];
+      var LW = 230, VW = CW - LW;
+      c.font = '600 36px ' + IT;
+      var rowLines = rows.map(function (r) { return wrapText(c, r[1], VW); });
+      c.font = '500 32px ' + IT;
+      var notes = t.notes ? wrapText(c, t.notes.replace(/^OPTIE\s*·?\s*/i, 'Optie · '), CW - 56) : [];
+      var wx = wxTrip(t), wxTxt = wx ? 'Weer: ' + wxTripText(t) : '';
+      var wxLines = wx ? wrapText(c, wxTxt, CW - 56) : [];
+      var h = 40 + 70 + 34;                                   // tijd + lijn
+      rowLines.forEach(function (ls) { h += ls.length * 46 + 26; });
+      if (notes.length) h += 30 + 44 + notes.length * 44 + 34;
+      if (wxLines.length) h += 26 + wxLines.length * 42 + 30;
+      h += 34;
+      rrect(c, M, y, W - 2 * M, h, 32, '#FFFDF9');
+      rrect(c, M, y + 28, 10, h - 56, 5, B.dot);
+      var yy = y + 40;
+      // tijd + boot
+      c.fillStyle = '#1E1B16'; c.font = '700 62px ' + SG; c.fillText(t.timeLabel, CX, yy + 56);
+      c.font = '700 30px ' + IT;
+      var chipTxt = B.label, cw = c.measureText(chipTxt).width + 44;
+      rrect(c, M + W - 2 * M - 46 - cw, yy + 8, cw, 58, 29, B.chip[0]);
+      c.fillStyle = B.chip[1]; c.fillText(chipTxt, M + W - 2 * M - 46 - cw + 22, yy + 48);
+      if (t.status && t.status !== 'Bevestigd') {
+        var st = t.status, sw = c.measureText(st).width + 44;
+        rrect(c, M + W - 2 * M - 46 - cw - 14 - sw, yy + 8, sw, 58, 29, '#FDEBD3');
+        c.fillStyle = '#7A4508'; c.fillText(st, M + W - 2 * M - 46 - cw - 14 - sw + 22, yy + 48);
+      }
+      yy += 70 + 20;
+      c.fillStyle = '#ECE4D8'; c.fillRect(CX, yy, CW, 2); yy += 14;
+      // regels
+      rows.forEach(function (r, i) {
+        c.fillStyle = '#6B6257'; c.font = '700 24px ' + IT; c.fillText(r[0], CX, yy + 38);
+        c.font = '600 36px ' + IT; c.fillStyle = r[2] ? '#1F5E63' : '#1E1B16';
+        rowLines[i].forEach(function (ln, j) { c.fillText(ln, CX + LW, yy + 40 + j * 46); });
+        if (r[2]) {
+          var lw = Math.min(VW, Math.max.apply(null, rowLines[i].map(function (ln) { return c.measureText(ln).width; })));
+          c.fillRect(CX + LW, yy + 48 + (rowLines[i].length - 1) * 46, lw, 2);
+          links.push({ x: CX + LW, y: yy + 4, w: lw, h: rowLines[i].length * 46 + 12, url: r[2] });
+        }
+        yy += rowLines[i].length * 46 + 26;
+      });
+      if (notes.length) {
+        yy += 8;
+        var nh = 44 + notes.length * 44 + 30;
+        rrect(c, CX, yy, CW, nh, 22, '#FFF7E8');
+        c.fillStyle = '#8A4513'; c.font = '700 24px ' + IT; c.fillText('BIJZONDERHEDEN', CX + 28, yy + 44);
+        c.fillStyle = '#1E1B16'; c.font = '500 32px ' + IT;
+        notes.forEach(function (ln, j) { c.fillText(ln, CX + 28, yy + 92 + j * 44); });
+        yy += nh + 22;
+      }
+      if (wxLines.length) {
+        var wh = wxLines.length * 42 + 30;
+        rrect(c, CX, yy, CW, wh, 22, wx.rain || wx.wind ? '#E1EBF6' : '#F6F1E9');
+        c.fillStyle = wx.rain || wx.wind ? '#2F5E8E' : '#4A433A'; c.font = '600 30px ' + IT;
+        wxLines.forEach(function (ln, j) { c.fillText(ln, CX + 28, yy + 46 + j * 42); });
+        yy += wh;
+      }
+      y += h + 28;
+    });
+
+    // afspraken
+    var tips = ['Graag 10 minuten voor vertrek op de opstaplocatie.', 'Na afloop de boot schoon en leeg achterlaten en de bar aanvullen.'];
+    c.font = '500 30px ' + IT;
+    var tl = []; tips.forEach(function (tp) { wrapText(c, tp, CW - 70).forEach(function (ln, j) { tl.push([ln, j === 0]); }); });
+    var fh = 40 + tl.length * 42 + 30 + 52 + 34;
+    rrect(c, M, y, W - 2 * M, fh, 32, '#EFE8DD');
+    var fy = y + 56;
+    tl.forEach(function (l) {
+      if (l[1]) { c.fillStyle = '#1F5E63'; c.beginPath(); c.arc(CX + 8, fy - 10, 7, 0, Math.PI * 2); c.fill(); }
+      c.fillStyle = '#3D362D'; c.font = '500 30px ' + IT; c.fillText(l[0], CX + 34, fy); fy += 42;
+    });
+    fy += 22;
+    c.fillStyle = '#1E1B16'; c.font = '700 30px ' + IT;
+    var q = 'Vragen? Bel of app ABC: ', qw = c.measureText(q).width;
+    c.fillText(q, CX, fy);
+    c.fillStyle = '#1F5E63'; c.fillText(ABC_TEL, CX + qw, fy);
+    var tw = c.measureText(ABC_TEL).width;
+    c.fillRect(CX + qw, fy + 8, tw, 2);
+    links.push({ x: CX + qw, y: fy - 34, w: tw, h: 50, url: 'tel:' + ABC_TEL.replace(/\s/g, '') });
+    y += fh + M;
+
+    var out = document.createElement('canvas'); out.width = W; out.height = y;
+    out.getContext('2d').drawImage(cv, 0, 0);
+    return { canvas: out, links: links };
+  }
+  function cardFiles(t) {
+    var list = cardTrips(t);
+    var fonts = document.fonts && document.fonts.load ? Promise.all(['700 60px "Space Grotesk"', '600 36px Inter', '700 24px Inter', '500 30px Inter'].map(function (f) { return document.fonts.load(f); })).catch(function () {}) : Promise.resolve();
+    return Promise.all([loadJsPDF(), fonts]).then(function (r) {
+      var JsPDF = r[0], d = drawCard(list);
+      var pw = 100, ph = Math.round(pw * d.canvas.height / d.canvas.width * 100) / 100, k = pw / d.canvas.width;
+      var pdf = new JsPDF({ unit: 'mm', format: [pw, ph], orientation: 'portrait', compress: true });
+      pdf.addImage(d.canvas.toDataURL('image/jpeg', 0.93), 'JPEG', 0, 0, pw, ph);
+      d.links.forEach(function (l) { pdf.link(l.x * k, l.y * k, l.w * k, l.h * k, { url: l.url }); });
+      var sk = (t.schipper || '').trim();
+      var base = 'Vaarkaart ' + t.date.slice(8, 10) + '-' + t.date.slice(5, 7) + ' ' + (sk ? proper(sk) : first(t.name));
+      return new Promise(function (res) {
+        d.canvas.toBlob(function (png) {
+          res({
+            pdf: new File([pdf.output('blob')], base + '.pdf', { type: 'application/pdf' }),
+            png: new File([png], base + '.png', { type: 'image/png' }),
+            text: (sk ? 'Hey ' + proper(sk) + ', hierbij' : 'Hierbij') + ' de vaarkaart voor ' + longDate(t.date).toLowerCase() + '.'
+          });
+        }, 'image/png');
+      });
+    });
+  }
+  function cardBtn(R) {
+    return [].slice.call(document.querySelectorAll('[data-act]')).filter(function (b) { return b.getAttribute('data-act') === 'card:' + R.kind + ':' + R.id; })[0];
+  }
+  function shareCard(R, first) {
+    var files = [R.file];
+    var go;
+    if (navigator.canShare && navigator.share && navigator.canShare({ files: files })) {
+      go = navigator.share({ files: files, title: R.file.name, text: R.text }).then(function () { return 'shared'; });
+    } else {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(R.file); a.download = R.file.name;
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+      go = Promise.resolve('downloaded');
+    }
+    go.then(function (res) {
+      READY = null;
+      toast(res === 'downloaded' ? 'Vaarkaart gedownload. Sleep hem in WhatsApp naar de schipper.' : 'Vaarkaart gedeeld');
+      var b = cardBtn(R); if (b) b.textContent = R.kind === 'png' ? 'Als afbeelding' : 'Vaarkaart (PDF)';
+    }, function (err) {
+      if (err && err.name === 'AbortError') { READY = null; return; }
+      if (first) {
+        READY = R;
+        var b = cardBtn(R); if (b) b.textContent = 'Tik om te delen';
+        toast('Vaarkaart klaar. Tik nog een keer om te delen.');
+      } else toast('Delen is niet gelukt.');
+    });
+  }
+  function cardButtons(t) {
+    return '<div class="acts"><button class="abtn ghost" data-act="card:pdf:' + esc(t.id) + '">Vaarkaart (PDF)</button><button class="abtn ghost" data-act="card:png:' + esc(t.id) + '">Als afbeelding</button></div>';
   }
 
   /* ---------- todo's ---------- */
@@ -1182,12 +1394,24 @@ body{padding-top:env(safe-area-inset-top)}
     var i = a.indexOf(':'), k = i < 0 ? a : a.slice(0, i), v = i < 0 ? '' : a.slice(i + 1);
     switch (k) {
       case 'noop': return;
+      case 'card':
+        var ci = v.indexOf(':'), kind = v.slice(0, ci), cid = v.slice(ci + 1), ct = findItem(cid);
+        if (!ct || ct.kind === 'alf') return;
+        if (READY && READY.id === cid && READY.kind === kind) { shareCard(READY, false); return; }
+        var cb = cardBtn({ id: cid, kind: kind }); if (cb) cb.textContent = 'Vaarkaart maken…';
+        cardFiles(ct).then(function (f) {
+          shareCard({ id: cid, kind: kind, file: kind === 'png' ? f.png : f.pdf, text: f.text }, true);
+        }, function (e) {
+          var b2 = cardBtn({ id: cid, kind: kind }); if (b2) b2.textContent = kind === 'png' ? 'Als afbeelding' : 'Vaarkaart (PDF)';
+          toast((e && e.message) || 'Vaarkaart maken is niet gelukt.');
+        });
+        return;
       case 'daypop': S.dayPop = v; S.sel = null; if (S.panel !== 'form') S.panel = null; render(); return;
       case 'closepop': S.dayPop = null; render(); return;
       case 'popsel':
         var pi = v.indexOf('|');
-        S.dayPop = null; S.confirmDel = null; S.sel = v.slice(pi + 1); S.panel = null; S.editing = null; render(); return;
-      case 'sel': S.confirmDel = null; S.sel = v; S.panel = null; S.editing = null; render(); return;
+        loadJsPDF().catch(function () {}); S.dayPop = null; S.confirmDel = null; S.sel = v.slice(pi + 1); S.panel = null; S.editing = null; render(); return;
+      case 'sel': loadJsPDF().catch(function () {}); S.confirmDel = null; S.sel = v; S.panel = null; S.editing = null; render(); return;
       case 'close':
         S.confirmDel = null; S.sel = null; if (S.panel === 'schippers') { S.filter = 'all'; S.skipper = null; } S.panel = null; S.editing = null; render(); return;
       case 'closeform': S.panel = null; S.editing = null; FORM_ERR = null; render(); return;
