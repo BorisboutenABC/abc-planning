@@ -310,6 +310,8 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .dp-row .flags{margin-top:6px}
 .dp-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 @media (max-width:700px){.dp-row{grid-template-columns:1fr}.dp-right{align-items:flex-start;flex-direction:row}}
+.lang{display:inline-block;vertical-align:middle;margin-left:6px;border-radius:5px;padding:1px 5px;font-size:10px;font-weight:700;letter-spacing:.06em;background:#EFE8DD;color:#5A5146;font-family:Inter,system-ui,sans-serif}
+.lang.en{background:#E1EBF6;color:#2F5E8E}
 .linkbtn{border:0;background:transparent;color:var(--mut);font-size:12px;text-decoration:underline;padding:4px;align-self:flex-start}
 body{padding-top:env(safe-area-inset-top)}
 @media (max-width:900px){.aside{max-width:none}.det{max-width:none}}
@@ -538,7 +540,7 @@ body{padding-top:env(safe-area-inset-top)}
     var klant = t.klantRaw.replace(PHONE_G, '').trim() + (t.phone ? ' +' + t.phone : '');
     var msg = (sk ? 'Hey ' + proper(sk) : 'Hey') + ', hierbij de gegevens voor je tocht:' + N + N +
       '*Datum:* ' + dagNaam(t) + ' ' + ddmmyyyy(t.date) + N + '*Tijd:* ' + t.tijd + N + '*Opstap:* ' + t.opstap + N + '*Afstap:* ' + t.afstap + N +
-      '*Boot:* ' + t.boatRaw + N + '*Klant:* ' + klant + N + '*Pax:* ' + (t.pax || '') + N + '*Drank:* ' + t.drankRaw + N + '*Hapjes:* ' + t.hapjes + N +
+      '*Boot:* ' + t.boatRaw + N + '*Klant:* ' + klant + N + '*Taal klant:* ' + (t.en ? 'Engels' : 'Nederlands') + N + '*Pax:* ' + (t.pax || '') + N + '*Drank:* ' + t.drankRaw + N + '*Hapjes:* ' + t.hapjes + N +
       '*Bijzonderheden:* ' + t.notes + N + N +
       'Graag 10 minuten van tevoren op de opstaplocatie zijn, zodat je op tijd kunt vertrekken.' + N + N +
       'Na afloop de boot graag schoon en leeg achterlaten en de bar weer aanvullen, zodat alles klaar is voor de volgende groep.' + N + N +
@@ -553,6 +555,10 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- kleine bouwstenen ---------- */
+  function langTag(t) {
+    if (!t || t.kind === 'alf') return '';
+    return t.en ? '<span class="lang en" title="Engelstalige klant">EN</span>' : '<span class="lang" title="Nederlandstalige klant">NL</span>';
+  }
   function chip(text, c) { return '<span class="chip" style="background:' + c[0] + ';color:' + c[1] + '">' + esc(text) + '</span>'; }
   function flagsHtml(t) {
     var f = [];
@@ -764,6 +770,7 @@ body{padding-top:env(safe-area-inset-top)}
       var B = BOAT[bk(t)];
       var rows = [
         ['KLANT', t.name],
+        ['TAAL', t.en ? 'Engels' : 'Nederlands'],
         ['TELEFOON', t.phone ? '+' + t.phone : 'Onbekend', t.phone ? 'tel:+' + t.phone : ''],
         ['GASTEN', (t.pax || '?') + ' personen'],
         ['DRANK', drankLabel(t)],
@@ -895,7 +902,7 @@ body{padding-top:env(safe-area-inset-top)}
     go.then(function (res) {
       READY = null;
       toast(res === 'downloaded' ? 'Vaarkaart gedownload. Sleep hem in WhatsApp naar de schipper.' : 'Vaarkaart gedeeld');
-      var b = cardBtn(R); if (b) b.textContent = R.kind === 'png' ? 'Als afbeelding' : 'Vaarkaart (PDF)';
+      var b = cardBtn(R); if (b) b.textContent = 'Vaarkaart (PDF) delen';
     }, function (err) {
       if (err && err.name === 'AbortError') { READY = null; return; }
       if (first) {
@@ -906,7 +913,7 @@ body{padding-top:env(safe-area-inset-top)}
     });
   }
   function cardButtons(t) {
-    return '<div class="acts"><button class="abtn ghost" data-act="card:pdf:' + esc(t.id) + '">Vaarkaart (PDF)</button><button class="abtn ghost" data-act="card:png:' + esc(t.id) + '">Als afbeelding</button></div>';
+    return '<button class="abtn ghost" style="width:100%" data-act="card:pdf:' + esc(t.id) + '">Vaarkaart (PDF) delen</button>';
   }
 
   /* ---------- todo's ---------- */
@@ -1034,7 +1041,7 @@ body{padding-top:env(safe-area-inset-top)}
   /* detail: maandagenda-stijl */
   function detailAgenda(t) {
     if (t.kind === 'alf') return alfDetail(t);
-    return '<div class="det-h"><div><div class="sg det-t">' + esc(t.name) + '</div><div class="det-m">' + statusChip(t) + '<span class="m12">' + esc(longDate(t.date)) + '</span></div></div>' + xbtn() + '</div>' +
+    return '<div class="det-h"><div><div class="sg det-t">' + esc(t.name) + langTag(t) + '</div><div class="det-m">' + statusChip(t) + '<span class="m12">' + esc(longDate(t.date)) + '</span></div></div>' + xbtn() + '</div>' +
       '<div class="who"><div class="av">' + esc(initials(t.name)) + '</div><div><div class="b">' + esc(t.name) + '</div><div class="m12">' + esc(t.source || 'Planning') + '</div></div></div>' +
       '<div class="tri"><div><div class="tv">' + esc(t.start || '—') + '</div><div class="tl">START</div></div><div><div class="tv">' + (t.pax || '—') + '</div><div class="tl">GASTEN</div></div><div><div class="tv">' + esc(duration(t)) + '</div><div class="tl">DUUR</div></div></div>' +
       '<div class="det-b">' +
@@ -1043,7 +1050,7 @@ body{padding-top:env(safe-area-inset-top)}
       '<div><div class="kl">BOOT</div><div class="kv">' + esc(BOAT[bk(t)].label) + '</div></div>' +
       '<div><div class="kl">OPSTAP</div><div class="kv">' + locHtml(t.opstap) + '</div></div>' +
       '<div><div class="kl">AFSTAP</div><div class="kv">' + locHtml(t.afstap) + '</div></div>' +
-      '<div><div class="kl">KLANT</div><div class="kv">' + esc(t.name) + '</div></div>' +
+      '<div><div class="kl">KLANT</div><div class="kv">' + esc(t.name) + langTag(t) + '</div></div>' +
       '<div style="grid-column:1/-1"><div class="kl">WEER TIJDENS DE TOCHT</div><div class="kv">' + esc(wxTripText(t)) + '</div></div>' +
       '<div><div class="kl">CONTACT</div><div class="kv">' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : 'Ontbreekt') + '</div></div>' +
       '</div></div>' +
@@ -1058,7 +1065,7 @@ body{padding-top:env(safe-area-inset-top)}
   function detailWeek(t) {
     if (t.kind === 'alf') return alfDetail(t).replace('class="dpad"', 'class=""');
     return '<div class="ws">' +
-      '<div class="ws-h"><div><div class="m12" style="font-weight:500">' + esc(medDate(t.date)) + ' · ' + esc(t.timeLabel) + '</div><h2 class="sg">' + esc(t.name) + '</h2></div><div style="display:flex;gap:8px;align-items:center">' + statusChip(t) + xbtn() + '</div></div>' +
+      '<div class="ws-h"><div><div class="m12" style="font-weight:500">' + esc(medDate(t.date)) + ' · ' + esc(t.timeLabel) + '</div><h2 class="sg">' + esc(t.name) + langTag(t) + '</h2></div><div style="display:flex;gap:8px;align-items:center">' + statusChip(t) + xbtn() + '</div></div>' +
       '<div class="tiles"><div class="tile"><div class="l">Gasten</div><div class="v">' + (t.pax || '—') + '</div></div><div class="tile"><div class="l">Boot</div><div class="v">' + esc(BOAT[bk(t)].label) + '</div></div>' +
       '<div class="tile"><div class="l">Drank</div><div class="v2">' + esc(drankLabel(t)) + '</div></div><div class="tile"><div class="l">Hapjes</div><div class="v2">' + esc(t.hapjes ? cap(t.hapjes) : '—') + '</div></div></div>' +
       '<div class="rows"><div><span>Opstap</span>' + locHtml(t.opstap) + '</div><div><span>Afstap</span>' + locHtml(t.afstap) + '</div><div><span>Weer</span><span>' + esc(wxTripText(t)) + '</span></div><div><span>Bron</span><span>' + esc(t.source || 'Planning') + '</span></div><div><span>Telefoon</span>' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : '<span>— ontbreekt</span>') + '</div></div>' +
@@ -1119,7 +1126,7 @@ body{padding-top:env(safe-area-inset-top)}
     var b = BOAT[bk(t)];
     return '<button class="tcard' + (t.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(t.id) + '" aria-label="Open tocht ' + esc(t.name) + '">' +
       '<div class="tc-top"><span class="tc-time">' + esc(t.timeLabel) + '</span>' + chip(b.short, b.chip) + '</div>' +
-      '<div class="tc-name">' + esc(t.name) + '</div><div class="tc-sub">' + (t.pax || '?') + ' pers · ' + esc(drankLabel(t)) + ' · ' + esc(t.opstap || '—') + '</div>' + (wxTrip(t) ? '<div class="wxline">' + wxTripHtml(t) + '</div>' : '') + flagsHtml(t) + '</button>';
+      '<div class="tc-name">' + esc(t.name) + langTag(t) + '</div><div class="tc-sub">' + (t.pax || '?') + ' pers · ' + esc(drankLabel(t)) + ' · ' + esc(t.opstap || '—') + '</div>' + (wxTrip(t) ? '<div class="wxline">' + wxTripHtml(t) + '</div>' : '') + flagsHtml(t) + '</button>';
   }
   function alfCard(a) {
     return '<button class="alfc' + (a.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(a.id) + '"><div class="alfc-t"><span>Light Festival ' + esc(a.start || '') + '</span><span>' + (a.cap ? a.booked + '/' + a.cap : esc(a.note || '')) + '</span></div>' + (a.cap ? bar(a.booked, a.cap) : '') + '</button>';
@@ -1205,7 +1212,7 @@ body{padding-top:env(safe-area-inset-top)}
       if (x.opstap) meta.push(x.opstap + (x.afstap && x.afstap !== x.opstap ? ' → ' + x.afstap : ''));
       meta.push(x.schipper ? 'Schipper: ' + x.schipper : 'Nog geen schipper');
       return '<button class="dp-row' + (x.id === S.sel ? ' on' : '') + '" data-act="popsel:' + date + '|' + esc(x.id) + '"><div class="dp-time">' + esc(x.timeLabel) + '</div>' +
-        '<div><div class="dp-name">' + esc(x.name) + '</div><div class="dp-meta">' + esc(meta.join(' · ')) + '</div>' + (x.notes ? '<div class="dp-meta" style="color:var(--ink)">' + esc(x.notes) + '</div>' : '') + flagsHtml(x) + '</div>' +
+        '<div><div class="dp-name">' + esc(x.name) + langTag(x) + '</div><div class="dp-meta">' + esc(meta.join(' · ')) + '</div>' + (x.notes ? '<div class="dp-meta" style="color:var(--ink)">' + esc(x.notes) + '</div>' : '') + flagsHtml(x) + '</div>' +
         '<div class="dp-right">' + chip(B.short, B.chip) + (wxTrip(x) ? wxTripHtml(x) : '') + '</div></button>';
     }).join('');
     return '<div class="dpov" data-act="closepop" role="dialog" aria-modal="true" aria-label="' + esc(longDate(date)) + '"><div class="dpcard" data-act="noop">' +
@@ -1249,7 +1256,7 @@ body{padding-top:env(safe-area-inset-top)}
         trips.map(function (t) {
           var b = BOAT[bk(t)];
           return '<button class="wcard' + (t.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(t.id) + '" aria-label="Open tocht ' + esc(t.name) + '"><div class="wc-top"><span class="wc-time">' + esc(t.timeLabel) + '</span>' + chip(b.short, b.chip) + '</div>' +
-            '<div class="wc-name">' + esc(t.name) + '</div><div class="wc-sub">' + (t.pax || '?') + ' pers · ' + esc(drankLabel(t)) + '</div>' + (wxTrip(t) ? '<div class="wxline">' + wxTripHtml(t) + '</div>' : '') + flagsHtml(t) + '</button>';
+            '<div class="wc-name">' + esc(t.name) + langTag(t) + '</div><div class="wc-sub">' + (t.pax || '?') + ' pers · ' + esc(drankLabel(t)) + '</div>' + (wxTrip(t) ? '<div class="wxline">' + wxTripHtml(t) + '</div>' : '') + flagsHtml(t) + '</button>';
         }).join('') +
         alfs.map(function (a) { return '<button class="walf' + (a.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(a.id) + '"><div class="b">Light Festival ' + esc(a.start || '') + '</div><div>' + (a.cap ? a.booked + '/' + a.cap + ' tickets' : esc(a.note || '')) + '</div></button>'; }).join('') +
         '</div>';
@@ -1340,7 +1347,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
   function sheetDetail(t) {
     if (t.kind === 'alf') return alfDetail(t).replace('class="dpad"', 'class=""');
-    return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><div class="m12">' + esc(dayMonth(t.date)) + ' · ' + esc(t.timeLabel) + '</div><div class="sg" style="font-weight:700;font-size:24px">' + esc(t.name) + '</div><div style="margin-top:6px">' + statusChip(t) + '</div></div>' + '<button class="x" style="width:40px;height:40px" data-act="close" aria-label="Sluiten">×</button></div>' +
+    return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><div class="m12">' + esc(dayMonth(t.date)) + ' · ' + esc(t.timeLabel) + '</div><div class="sg" style="font-weight:700;font-size:24px">' + esc(t.name) + langTag(t) + '</div><div style="margin-top:6px">' + statusChip(t) + '</div></div>' + '<button class="x" style="width:40px;height:40px" data-act="close" aria-label="Sluiten">×</button></div>' +
       '<div class="tiles"><div class="tile"><div class="l">Gasten</div><div class="v" style="font-size:17px">' + (t.pax || '—') + '</div></div><div class="tile"><div class="l">Boot</div><div class="v" style="font-size:17px">' + esc(BOAT[bk(t)].label) + '</div></div>' +
       '<div class="tile"><div class="l">Drank</div><div class="v2">' + esc(drankLabel(t)) + '</div></div><div class="tile"><div class="l">Hapjes</div><div class="v2">' + esc(t.hapjes ? cap(t.hapjes) : '—') + '</div></div></div>' +
       '<div class="rows"><div><span>Opstap</span>' + locHtml(t.opstap) + '</div><div><span>Afstap</span>' + locHtml(t.afstap) + '</div><div><span>Weer</span><span>' + esc(wxTripText(t)) + '</span></div><div><span>Schipper</span><span>' + esc(t.schipper || 'Nog niet ingedeeld') + '</span></div><div><span>Telefoon</span>' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : '<span>Ontbreekt</span>') + '</div>' + (t.source ? '<div><span>Bron</span><span>' + esc(t.source) + '</span></div>' : '') + '</div>' +
@@ -1402,7 +1409,7 @@ body{padding-top:env(safe-area-inset-top)}
         cardFiles(ct).then(function (f) {
           shareCard({ id: cid, kind: kind, file: kind === 'png' ? f.png : f.pdf, text: f.text }, true);
         }, function (e) {
-          var b2 = cardBtn({ id: cid, kind: kind }); if (b2) b2.textContent = kind === 'png' ? 'Als afbeelding' : 'Vaarkaart (PDF)';
+          var b2 = cardBtn({ id: cid, kind: kind }); if (b2) b2.textContent = 'Vaarkaart (PDF) delen';
           toast((e && e.message) || 'Vaarkaart maken is niet gelukt.');
         });
         return;
