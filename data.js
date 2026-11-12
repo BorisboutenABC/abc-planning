@@ -94,6 +94,7 @@
 
   window.ABC = {
     authValid: authValid,
+    email: function () { return Dev.email || ''; },
     signIn: signIn,
     signOut: signOut,
     initAuth: initAuth,

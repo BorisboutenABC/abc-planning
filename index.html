@@ -984,6 +984,7 @@ body{padding-top:env(safe-area-inset-top)}
       '<div class="frm-h">' + (mobile ? '<div class="h sg">' + title + '</div>' : '<h2 class="sg">' + title + '</h2>') + '<button type="button" class="x" data-act="closeform" aria-label="Sluiten">×</button></div>' +
       '<div class="m12">' + (S.editing ? 'Wijzigingen gaan direct naar regel ' + S.editing.row + ' in tabblad ' + esc(S.editing.sheet) + '.' : 'Wordt opgeslagen in het juiste maandtabblad van je planning.') + '</div>' +
       (FORM_ERR ? '<div class="ferr">' + esc(FORM_ERR) + '</div>' : '') +
+      (!ABC.authValid() ? '<div class="fwarn">Je bent uitgelogd, dus opslaan lukt nu niet. <button type="button" class="sbtn" data-act="login" style="margin-left:6px">Inloggen met Google</button></div>' : '') +
       '<div class="fg">' +
       '<label class="w"><span>Datum</span><input type="date" name="datum" required value="' + esc(v.datum) + '"></label>' +
       '<label class="' + h + '"><span>Begintijd</span><input type="time" name="start" step="300" value="' + esc(v.start) + '"></label>' +
@@ -1176,7 +1177,7 @@ body{padding-top:env(safe-area-inset-top)}
       '<div style="display:flex;justify-content:space-between"><span style="display:flex;align-items:center;gap:8px"><span class="dt" style="background:#C0392B"></span>Geen schipper</span><span style="color:var(--mut)">' + up.filter(function (t) { return t.noSkipper; }).length + '</span></div>' +
       '</div></div>' +
       '<div class="card"><div class="ctitle">' + cap(NL_MON[mi(a)]) + ' in cijfers</div><div class="stats"><div class="stat"><div class="l">Tochten</div><div class="v">' + mT.length + '</div></div><div class="stat"><div class="l">Gasten</div><div class="v">' + mT.reduce(function (s, t) { return s + (t.pax || 0); }, 0) + '</div></div></div></div>' +
-      '<button class="linkbtn" data-act="logout">Uitloggen</button>' +
+      '<button class="linkbtn" data-act="logout">' + (ABC.email() ? 'Ingelogd als ' + esc(ABC.email()) + ' · uitloggen' : 'Uitloggen') + '</button>' +
       '</aside>';
     var title = S.view === 'day' ? longDate(a) : cap(NL_MON[mi(a)]) + ' ' + yr(a);
     var body = !DATA ? '<div class="boot" style="min-height:300px"><div class="spin"></div>Planning laden…</div>' : (S.view === 'day' ? dayList(a) : calHtml());
@@ -1348,7 +1349,7 @@ body{padding-top:env(safe-area-inset-top)}
         (!items.length ? '<div class="empty" style="background:var(--card)">Geen tochten op deze dag.<br><button class="save" data-act="newon:' + cur + '">+ Tocht toevoegen</button></div>' : '') +
         trips.map(tripCard).join('') + alfs.map(alfCard).join('') +
         '<div class="mcard"><div class="h sg">Aandachtspunten deze week</div><div style="display:flex;flex-direction:column;gap:8px">' + todoHtml(todoList(wT, confs), 5) + '</div></div>' +
-        '<button class="linkbtn" data-act="logout">Uitloggen</button>';
+        '<button class="linkbtn" data-act="logout">' + (ABC.email() ? 'Ingelogd als ' + esc(ABC.email()) + ' · uitloggen' : 'Uitloggen') + '</button>';
     }
     var overlay = '';
     if (S.panel === 'form') {
@@ -1460,7 +1461,7 @@ body{padding-top:env(safe-area-inset-top)}
       case 'mmonth': S.mMonth = !S.mMonth; render(); return;
       case 'refresh': CACHE = {}; ERR = null; load(true); return;
       case 'login':
-        ABC.signIn().then(function () { ERR = null; CACHE = {}; load(true); }, function (e) { ERR = 'AUTH'; render(); toast(e.message); });
+        timed(ABC.signIn(), 90000).then(function () { ERR = null; CACHE = {}; load(true); }, function (e) { ERR = 'AUTH'; render(); toast(e.message); });
         return;
       case 'logout':
         ABC.signOut(); DATA = null; CACHE = {}; ERR = 'AUTH'; S.sel = null; S.panel = null; render(); return;
@@ -1471,7 +1472,7 @@ body{padding-top:env(safe-area-inset-top)}
         if (S.confirmDel !== v) { S.confirmDel = v; render(); return; }
         if (!ABC.authValid()) { ABC.signIn().then(function () { act(a); }, function (e) { toast(e.message); }); return; }
         DELETING = true; render();
-        freshRow(dx).then(function (row) { return rpc('deleteTrip', [row.id, row.klantRaw]); })
+        timed(freshRow(dx).then(function (row) { return rpc('deleteTrip', [row.id, row.klantRaw]); }), 60000)
           .then(function () { DELETING = false; S.confirmDel = null; S.sel = null; CACHE = {}; toast('Tocht verwijderd uit de planning'); load(true); },
             function (err) { DELETING = false; S.confirmDel = null; toast((err && err.message) || 'Verwijderen is niet gelukt'); render(); });
         return;
@@ -1521,41 +1522,59 @@ body{padding-top:env(safe-area-inset-top)}
     var problem = !f.datum ? 'Kies een datum.' : (!f.naam ? 'Vul de naam van de klant in.' : (!f.start ? 'Vul een begintijd in.' : ''));
     if (problem) { showFormErr(problem); return; }
     var ed = S.editing;
+    if (ed) { f.id = ed.id; f.origKlant = ed.klantRaw; }
     SAVING = true; FORM_ERR = null;
-    var btn = e.target.querySelector('.save'); if (btn) { btn.disabled = true; btn.textContent = 'Opslaan…'; }
+    var btn = e.target.querySelector('.save');
+    var step = function (t) { if (btn) { btn.disabled = true; btn.textContent = t; } };
     var fail = function (err) { SAVING = false; showFormErr((err && err.message) || String(err)); };
-    (ABC.authValid() ? Promise.resolve() : ABC.signIn())
-      .then(function () { return ed ? freshRow(ed) : null; })
-      .then(function (row) {
-        if (row) { f.id = row.id; f.origKlant = row.klantRaw; }
-        return rpc('saveTrip', [f]);
+    if (!ABC.authValid()) { fail(new Error('Je bent uitgelogd. Tik bovenaan op "Inloggen met Google" en sla daarna opnieuw op.')); return; }
+    step('Opslaan…');
+    timed(rpc('saveTrip', [f]), 45000)
+      .catch(function (err) {
+        // regels verschoven (bijv. door de Trytn-koppeling)? Tocht opnieuw opzoeken en nog één keer proberen.
+        if (ed && /intussen/i.test((err && err.message) || '')) {
+          step('Tocht opnieuw zoeken…');
+          return freshRow(ed).then(function (row) {
+            f.id = row.id; f.origKlant = row.klantRaw; step('Opslaan…');
+            return timed(rpc('saveTrip', [f]), 45000);
+          });
+        }
+        throw err;
       })
       .then(function (res) {
-        if (btn) btn.textContent = 'Controleren…';
-        return monthData(res.datum).then(function (d) {
-          var t = (d.trips || []).filter(function (x) { return x.id === res.id; })[0];
-          var miss = [];
-          if (!t) miss.push('de tocht zelf');
-          else {
-            if ((t.opstap || '') !== (f.opstap || '')) miss.push('opstap');
-            if ((t.afstap || '') !== (f.afstap || '')) miss.push('afstap');
-            if ((t.schipper || '').toLowerCase() !== (f.schipper || '').toLowerCase()) miss.push('schipper');
-            if ((t.start || '') !== (f.start || '')) miss.push('tijd');
-            if (t.naamRaw.toLowerCase().indexOf(f.naam.toLowerCase()) < 0) miss.push('klant');
-          }
-          return { res: res, miss: miss };
-        });
+        step('Controleren…');
+        var gs = grStart(res.datum);
+        return timed(rpc('getData', [gs, add(gs, 41)]), 45000).then(function (d) { return { res: res, d: d, gs: gs }; });
       })
       .then(function (r) {
+        // de verse planning meteen gebruiken (geen oude kopie meer tonen)
+        var fresh = prep(r.d);
+        CACHE = {}; CACHE[r.gs] = fresh; LOADED_AT = Date.now();
+        try { localStorage.setItem('abc_' + r.gs, JSON.stringify(r.d)); } catch (x) { /* */ }
+        var t = fresh.trips.filter(function (x) { return x.id === r.res.id; })[0], miss = [];
+        if (!t) miss.push('de tocht zelf');
+        else {
+          if ((t.opstap || '') !== (f.opstap || '')) miss.push('opstap');
+          if ((t.afstap || '') !== (f.afstap || '')) miss.push('afstap');
+          if ((t.schipper || '').toLowerCase() !== (f.schipper || '').toLowerCase()) miss.push('schipper');
+          if ((t.start || '') !== (f.start || '')) miss.push('tijd');
+          if (t.naamRaw.toLowerCase().indexOf(f.naam.toLowerCase()) < 0) miss.push('klant');
+        }
         SAVING = false;
-        if (r.miss.length) { showFormErr('Niet alles is goed opgeslagen (' + r.miss.join(', ') + '). Probeer het opnieuw of pas het aan in de sheet.'); CACHE = {}; return; }
+        if (miss.length) { showFormErr('Niet alles is goed opgeslagen (' + miss.join(', ') + '). Probeer het opnieuw of pas het aan in de sheet.'); return; }
         S.panel = null; S.editing = null; FORM_ERR = null;
-        CACHE = {}; S.anchor = r.res.datum; S.sel = r.res.id;
+        S.anchor = r.res.datum; S.sel = r.res.id; DATA = fresh; ERR = null;
+        render();
         toast('Opgeslagen en gecontroleerd in de sheet');
-        load(true);
       })
       .catch(fail);
   });
+  function timed(pr, ms) {
+    return new Promise(function (resolve, reject) {
+      var tm = setTimeout(function () { reject(new Error('Google reageert niet (na ' + Math.round(ms / 1000) + ' seconden). Controleer je internet en probeer het opnieuw; kijk eventueel eerst in de sheet of het toch is opgeslagen.')); }, ms);
+      pr.then(function (v) { clearTimeout(tm); resolve(v); }, function (e) { clearTimeout(tm); reject(e); });
+    });
+  }
   function rpc(fn, args) {
     return new Promise(function (resolve, reject) {
       var r = ABC.run().withSuccessHandler(resolve).withFailureHandler(reject);
