@@ -1,5 +1,5 @@
 // ABC Planning — service worker: app snel openen, altijd de nieuwste versie als er internet is.
-const CACHE = 'abc-planning-v8';
+const CACHE = 'abc-planning-v9';
 const SHELL = ['./', 'index.html', 'data.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {

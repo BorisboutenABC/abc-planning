@@ -957,6 +957,20 @@ body{padding-top:env(safe-area-inset-top)}
     return { datum: S.newDate || (S.anchor < todayIso() ? todayIso() : S.anchor), start: '', end: '', naam: '', tel: '', pax: '', drank: 'incl drank', hapjes: '', opstap: 'Central Station', afstap: 'Central Station', boot: '', schipper: '', status: 'Bevestigd', notes: '', en: false };
   }
   function opt(v, label, cur) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; }
+  function locNames() { return (DATA ? DATA.raw.locaties : []).map(function (l) { return l.naam; }); }
+  function locCanon(val) {
+    var v = String(val || '').trim(), k = v.toLowerCase().replace(/aa/g, 'a').replace(/[^a-z]/g, '');
+    if (!v) return '';
+    var hit = locNames().filter(function (n) { return n.toLowerCase().replace(/aa/g, 'a').replace(/[^a-z]/g, '') === k; })[0];
+    return hit || v;
+  }
+  function locField(name, label, cur, h) {
+    var names = locNames(), c = locCanon(cur), other = c && names.indexOf(c) < 0;
+    return '<label class="' + h + '"><span>' + label + '</span><select name="' + name + 'Sel" data-loc="' + name + '">' +
+      opt('', '—', other ? '__x' : c) + names.map(function (n) { return opt(n, n, c); }).join('') +
+      opt('__other', 'Andere locatie…', other ? '__other' : '') + '</select>' +
+      '<input type="text" name="' + name + '" placeholder="Typ de locatie" value="' + esc(other ? c : '') + '" style="margin-top:6px' + (other ? '' : ';display:none') + '"></label>';
+  }
   function formHtml(mobile) {
     var v = formValues();
     var sk = (DATA ? DATA.raw.schippers : []).map(function (s) { return s.naam; });
@@ -979,8 +993,8 @@ body{padding-top:env(safe-area-inset-top)}
       '<label class="' + h + '"><span>Pax</span><input type="number" name="pax" inputmode="numeric" min="0" placeholder="20" value="' + esc(v.pax) + '"></label>' +
       '<label class="' + h + '"><span>Drank</span><select name="drank">' + dr.map(function (d) { return opt(d, d, v.drank); }).join('') + '</select></label>' +
       '<label class="' + h + '"><span>Hapjes</span><input type="text" name="hapjes" list="dl-hap" placeholder="—" value="' + esc(v.hapjes) + '"></label>' +
-      '<label class="' + h + '"><span>Opstap</span><input type="text" name="opstap" list="dl-loc" value="' + esc(v.opstap) + '"></label>' +
-      '<label class="' + h + '"><span>Afstap</span><input type="text" name="afstap" list="dl-loc" value="' + esc(v.afstap) + '"></label>' +
+      locField('opstap', 'Opstap', v.opstap, h) +
+      locField('afstap', 'Afstap', v.afstap, h) +
       '<label class="' + h + '"><span>Boot</span><select name="boot">' + opt('', 'Nog kiezen', v.boot) + opt('ZAZA', 'Zaza', v.boot) + opt('Mosi Jo', 'Mosi Jo', v.boot) + '</select></label>' +
       '<label class="' + h + '"><span>Schipper</span><select name="schipper">' + opt('', 'Nog indelen', v.schipper) + sk.map(function (n) { return opt(n, n, (v.schipper || '').toLowerCase() === n.toLowerCase() ? n : ''); }).join('') + '</select></label>' +
       '<label class="w"><span>Status</span><select name="status">' + opt('Bevestigd', 'Bevestigd', v.status) + opt('Optie', 'Optie', v.status) + '</select></label>' +
@@ -1457,10 +1471,9 @@ body{padding-top:env(safe-area-inset-top)}
         if (S.confirmDel !== v) { S.confirmDel = v; render(); return; }
         if (!ABC.authValid()) { ABC.signIn().then(function () { act(a); }, function (e) { toast(e.message); }); return; }
         DELETING = true; render();
-        ABC.run()
-          .withSuccessHandler(function () { DELETING = false; S.confirmDel = null; S.sel = null; CACHE = {}; toast('Tocht verwijderd uit de planning'); load(true); })
-          .withFailureHandler(function (err) { DELETING = false; S.confirmDel = null; toast((err && err.message) || 'Verwijderen is niet gelukt'); render(); })
-          .deleteTrip(dx.id, dx.klantRaw);
+        freshRow(dx).then(function (row) { return rpc('deleteTrip', [row.id, row.klantRaw]); })
+          .then(function () { DELETING = false; S.confirmDel = null; S.sel = null; CACHE = {}; toast('Tocht verwijderd uit de planning'); load(true); },
+            function (err) { DELETING = false; S.confirmDel = null; toast((err && err.message) || 'Verwijderen is niet gelukt'); render(); });
         return;
     }
   }
@@ -1487,6 +1500,11 @@ body{padding-top:env(safe-area-inset-top)}
     if (f && f.id === 'tripForm') checkFormConflict(f);
   });
   document.addEventListener('change', function (e) {
+    var ln = e.target.getAttribute && e.target.getAttribute('data-loc');
+    if (ln && e.target.form) {
+      var inp = e.target.form.elements[ln];
+      if (inp) { inp.style.display = e.target.value === '__other' ? '' : 'none'; if (e.target.value === '__other') inp.focus(); }
+    }
     var f = e.target.form;
     if (f && f.id === 'tripForm') checkFormConflict(f);
   });
@@ -1497,38 +1515,81 @@ body{padding-top:env(safe-area-inset-top)}
     var el = e.target.elements;
     var f = {
       datum: el.datum.value, start: el.start.value, end: el.end.value, naam: el.naam.value.trim(), tel: el.tel.value.trim(),
-      pax: el.pax.value, drank: el.drank.value, hapjes: el.hapjes.value.trim(), opstap: el.opstap.value.trim(), afstap: el.afstap.value.trim(),
+      pax: el.pax.value, drank: el.drank.value, hapjes: el.hapjes.value.trim(), opstap: locVal(el, 'opstap'), afstap: locVal(el, 'afstap'),
       boot: el.boot.value, schipper: el.schipper.value, status: el.status.value, notes: el.notes.value.trim(), en: el.en.checked
     };
     var problem = !f.datum ? 'Kies een datum.' : (!f.naam ? 'Vul de naam van de klant in.' : (!f.start ? 'Vul een begintijd in.' : ''));
     if (problem) { showFormErr(problem); return; }
-    if (S.editing) { f.id = S.editing.id; f.origKlant = S.editing.klantRaw; }
+    var ed = S.editing;
     SAVING = true; FORM_ERR = null;
     var btn = e.target.querySelector('.save'); if (btn) { btn.disabled = true; btn.textContent = 'Opslaan…'; }
-    (ABC.authValid() ? Promise.resolve() : ABC.signIn()).then(function () { ABC.run()
-      .withSuccessHandler(function (res) {
-        SAVING = false; S.panel = null; S.editing = null; FORM_ERR = null;
-        CACHE = {}; S.anchor = res.datum; S.sel = res.id;
-        if (!S.mobile && S.view === 'day') S.view = 'day';
-        toast('Tocht opgeslagen in de planning');
+    var fail = function (err) { SAVING = false; showFormErr((err && err.message) || String(err)); };
+    (ABC.authValid() ? Promise.resolve() : ABC.signIn())
+      .then(function () { return ed ? freshRow(ed) : null; })
+      .then(function (row) {
+        if (row) { f.id = row.id; f.origKlant = row.klantRaw; }
+        return rpc('saveTrip', [f]);
+      })
+      .then(function (res) {
+        if (btn) btn.textContent = 'Controleren…';
+        return monthData(res.datum).then(function (d) {
+          var t = (d.trips || []).filter(function (x) { return x.id === res.id; })[0];
+          var miss = [];
+          if (!t) miss.push('de tocht zelf');
+          else {
+            if ((t.opstap || '') !== (f.opstap || '')) miss.push('opstap');
+            if ((t.afstap || '') !== (f.afstap || '')) miss.push('afstap');
+            if ((t.schipper || '').toLowerCase() !== (f.schipper || '').toLowerCase()) miss.push('schipper');
+            if ((t.start || '') !== (f.start || '')) miss.push('tijd');
+            if (t.naamRaw.toLowerCase().indexOf(f.naam.toLowerCase()) < 0) miss.push('klant');
+          }
+          return { res: res, miss: miss };
+        });
+      })
+      .then(function (r) {
+        SAVING = false;
+        if (r.miss.length) { showFormErr('Niet alles is goed opgeslagen (' + r.miss.join(', ') + '). Probeer het opnieuw of pas het aan in de sheet.'); CACHE = {}; return; }
+        S.panel = null; S.editing = null; FORM_ERR = null;
+        CACHE = {}; S.anchor = r.res.datum; S.sel = r.res.id;
+        toast('Opgeslagen en gecontroleerd in de sheet');
         load(true);
       })
-      .withFailureHandler(function (err) {
-        SAVING = false;
-        showFormErr((err && err.message) || String(err));
-      })
-      .saveTrip(f);
-    }, function (err) { SAVING = false; showFormErr(err.message); });
+      .catch(fail);
   });
+  function rpc(fn, args) {
+    return new Promise(function (resolve, reject) {
+      var r = ABC.run().withSuccessHandler(resolve).withFailureHandler(reject);
+      r[fn].apply(r, args);
+    });
+  }
+  function monthData(iso) { var a = moStart(iso); return rpc('getData', [a, add(addMonths(a, 1), -1)]); }
+  /** Zoek de tocht opnieuw op in de sheet: regels kunnen intussen verschoven zijn. */
+  function freshRow(ed) {
+    return monthData(ed.date).then(function (d) {
+      var all = (d.trips || []).filter(function (x) { return x.kind === 'trip'; });
+      var same = all.filter(function (x) { return x.id === ed.id && x.klantRaw === ed.klantRaw; });
+      if (same.length) return same[0];
+      var c = all.filter(function (x) { return x.klantRaw === ed.klantRaw && x.date === ed.date && x.tijd === ed.tijd; });
+      if (c.length !== 1) c = all.filter(function (x) { return x.klantRaw === ed.klantRaw && x.date === ed.date; });
+      if (c.length === 1) return c[0];
+      throw new Error(c.length ? 'Er staan meerdere tochten met deze klantnaam op die dag. Pas hem aan in de sheet.' : 'Deze tocht is intussen in de sheet gewijzigd of verplaatst. Sluit het formulier en open de tocht opnieuw.');
+    });
+  }
+  function locVal(el, name) {
+    var sel = el[name + 'Sel'], inp = el[name];
+    if (sel && sel.value !== '__other') return sel.value;
+    return locCanon(inp ? inp.value : '');
+  }
   function showFormErr(msg) {
     FORM_ERR = msg;
     var form = document.getElementById('tripForm');
     if (!form) { render(); return; }
     var box = form.querySelector('.ferr');
     if (!box) { box = document.createElement('div'); box.className = 'ferr'; form.insertBefore(box, form.querySelector('.fg')); }
-    box.textContent = msg;
+    box.textContent = 'Niet opgeslagen: ' + msg;
+    toast('Niet opgeslagen. Zie de melding in het formulier.');
     var btn = form.querySelector('.save'); if (btn) { btn.disabled = false; btn.textContent = 'Tocht opslaan'; }
-    box.scrollIntoView({ block: 'nearest' });
+    if (box.scrollIntoView) box.scrollIntoView({ block: 'nearest' });
   }
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && S.dayPop) { act('closepop'); return; }
