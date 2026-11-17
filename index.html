@@ -91,6 +91,13 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .ev .d{width:7px;height:7px;border-radius:999px;flex:none}
 .ev .lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ev .w{margin-left:auto;color:#B4531A;font-weight:700}
+.ev .pd{margin-left:auto;flex:none;font-size:10px;font-weight:800;color:#2F8A4E}
+.ev .w+.pd{margin-left:2px}
+.paybox{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:14px;padding:10px 12px;background:#F3EEE6}
+.paybox.on{background:#DDEFE2}
+.paybox .pt{font-size:13px;font-weight:700;color:var(--ink)}
+.paybox .ps{font-size:11.5px;color:var(--mut)}
+.paybox .sbtn{white-space:nowrap;flex:none}
 .empty{background:var(--soft);border-radius:18px;padding:22px;text-align:center;color:var(--mut);font-size:14px}
 .dlist{display:flex;flex-direction:column;gap:10px;max-width:720px}
 /* trip cards (mobiel / dagweergave) */
@@ -512,6 +519,7 @@ body{padding-top:env(safe-area-inset-top)}
     if (S.problems && !(t.upcoming && (t.warn || t.noPhone))) return false;
     if (S.filter === 'alf' && !t.alfPriv) return false;
     if (S.filter === 'offertes' && t.status === 'Bevestigd') return false;
+    if (S.filter === 'onbetaald' && (t.paid || t.status !== 'Bevestigd')) return false;
     if (S.boat === 'alf') return false;
     if (S.boat && (t.boat || 'none') !== S.boat) return false;
     if (S.skipper) {
@@ -521,7 +529,7 @@ body{padding-top:env(safe-area-inset-top)}
     return true;
   }
   function passA() {
-    return !S.problems && S.filter !== 'offertes' && (!S.boat || S.boat === 'alf') && !S.skipper;
+    return !S.problems && S.filter !== 'offertes' && S.filter !== 'onbetaald' && (!S.boat || S.boat === 'alf') && !S.skipper;
   }
   function byStart(a, b) { return (a.startMin == null ? 9999 : a.startMin) - (b.startMin == null ? 9999 : b.startMin); }
   function dayItems(date) {
@@ -591,13 +599,24 @@ body{padding-top:env(safe-area-inset-top)}
     if (t.noSkipper) f.push(chip('Geen schipper', ['#FBE3DF', '#8A2A1C']));
     if (t.conflict) f.push(chip('Bootconflict', ['#FDEBD3', '#7A4508']));
     if (t.noPhone) f.push(chip('Geen tel.', ['#EFE8DD', '#5A5146']));
+    if (t.status === 'Bevestigd' && !t.paid && !t.upcoming) f.push(chip('Nog niet betaald', ['#F3EEE6', '#7A6F62']));
     var w = t.upcoming ? wxTrip(t) : null;
     if (w && w.rain) f.push(chip('Regen ' + w.p + '%', ['#E1EBF6', '#2F5E8E']));
     if (w && w.wind) f.push(chip('Harde wind', ['#E1EBF6', '#2F5E8E']));
     return f.length ? '<div class="flags">' + f.join('') + '</div>' : '';
   }
   function statusChip(t) {
-    return t.status === 'Bevestigd' ? chip('Bevestigd', ['#DDEFE2', '#1D5B33']) : chip(t.status, ['#FDEBD3', '#7A4508']);
+    return (t.status === 'Bevestigd' ? chip('Bevestigd', ['#DDEFE2', '#1D5B33']) : chip(t.status, ['#FDEBD3', '#7A4508'])) + ' ' + paidChip(t);
+  }
+  function paidChip(t) {
+    if (!t || t.kind === 'alf' || t.status !== 'Bevestigd') return '';
+    return t.paid ? chip('Betaald', ['#D7EAF5', '#1C5378']) : chip('Nog niet betaald', ['#F3EEE6', '#7A6F62']);
+  }
+  function payBox(t) {
+    if (!t || t.kind === 'alf') return '';
+    var busy = PAYING === t.id;
+    return '<div class="paybox' + (t.paid ? ' on' : '') + '"><div><div class="pt">' + (t.paid ? 'Betaald' : 'Nog niet betaald') + '</div><div class="ps">' + (t.paid ? 'Vinkje staat in de sheet.' : 'Zet op betaald zodra het geld binnen is.') + '</div></div>' +
+      '<button class="sbtn" data-act="paid:' + esc(t.id) + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Opslaan…' : (t.paid ? 'Ongedaan maken' : 'Markeer als betaald')) + '</button></div>';
   }
   function drankLabel(t) {
     var d = t.drankRaw || '';
@@ -976,7 +995,7 @@ body{padding-top:env(safe-area-inset-top)}
         drank: t.drankRaw, hapjes: t.hapjes, opstap: t.opstap, afstap: t.afstap,
         boot: /zaza/i.test(t.boatRaw) ? 'ZAZA' : (/mosi/i.test(t.boatRaw) ? 'Mosi Jo' : ''),
         schipper: t.schipper, status: /^\s*optie\b/i.test(t.notes) ? 'Optie' : 'Bevestigd',
-        notes: t.notes.replace(/^OPTIE\s*·?\s*/i, ''), en: /\bEN\b/.test(t.klantRaw)
+        notes: t.notes.replace(/^OPTIE\s*·?\s*/i, ''), en: /\bEN\b/.test(t.klantRaw), betaald: !!t.paid
       };
     }
     return { datum: S.newDate || (S.anchor < todayIso() ? todayIso() : S.anchor), start: '', end: '', naam: '', tel: '', pax: '', drank: 'incl drank', hapjes: '', opstap: 'Central Station', afstap: 'Central Station', boot: '', schipper: '', status: 'Bevestigd', notes: '', en: false };
@@ -1024,6 +1043,7 @@ body{padding-top:env(safe-area-inset-top)}
       '<label class="' + h + '"><span>Boot</span><select name="boot">' + opt('', 'Nog kiezen', v.boot) + opt('ZAZA', 'Zaza', v.boot) + opt('Mosi Jo', 'Mosi Jo', v.boot) + '</select></label>' +
       '<label class="' + h + '"><span>Schipper</span><select name="schipper">' + opt('', 'Nog indelen', v.schipper) + sk.map(function (n) { return opt(n, n, (v.schipper || '').toLowerCase() === n.toLowerCase() ? n : ''); }).join('') + '</select></label>' +
       '<label class="w"><span>Status</span><select name="status">' + opt('Bevestigd', 'Bevestigd', v.status) + opt('Optie', 'Optie', v.status) + '</select></label>' +
+      '<label class="ck"><input type="checkbox" name="betaald"' + (v.betaald ? ' checked' : '') + '><span>Betaald</span></label>' +
       '<label class="w"><span>Bijzonderheden</span><input type="text" name="notes" placeholder="Bijv. verwarming, versiering, cash" value="' + esc(v.notes) + '"></label>' +
       '<label class="ck"><input type="checkbox" name="en"' + (v.en ? ' checked' : '') + '><span>Engelstalig klantbericht (gaat automatisch bij buitenlands nummer)</span></label>' +
       '</div>' +
@@ -1084,7 +1104,7 @@ body{padding-top:env(safe-area-inset-top)}
     return '<div class="det-h"><div><div class="sg det-t">' + esc(t.name) + langTag(t) + '</div><div class="det-m">' + statusChip(t) + '<span class="m12">' + esc(longDate(t.date)) + '</span></div></div>' + xbtn() + '</div>' +
       '<div class="who"><div class="av">' + esc(initials(t.name)) + '</div><div><div class="b">' + esc(t.name) + '</div><div class="m12">' + esc(t.source || 'Planning') + '</div></div></div>' +
       '<div class="tri"><div><div class="tv">' + esc(t.start || '—') + '</div><div class="tl">START</div></div><div><div class="tv">' + (t.pax || '—') + '</div><div class="tl">GASTEN</div></div><div><div class="tv">' + esc(duration(t)) + '</div><div class="tl">DUUR</div></div></div>' +
-      '<div class="det-b">' +
+      '<div class="det-b">' + payBox(t) +
       '<div class="box blue"><div class="bh">TOCHT</div><div class="g2">' +
       '<div><div class="kl">WANNEER</div><div class="kv">' + esc(NL_DOW_S[dow(t.date)] + ' ' + dn(t.date) + ' ' + NL_MON_S[mi(t.date)]) + '</div><div>' + esc(t.timeLabel) + '</div></div>' +
       '<div><div class="kl">BOOT</div><div class="kv">' + esc(BOAT[bk(t)].label) + '</div></div>' +
@@ -1111,7 +1131,7 @@ body{padding-top:env(safe-area-inset-top)}
       '<div class="rows"><div><span>Opstap</span>' + locHtml(t.opstap) + '</div><div><span>Afstap</span>' + locHtml(t.afstap) + '</div><div><span>Weer</span><span>' + esc(wxTripText(t)) + '</span></div><div><span>Bron</span><span>' + esc(t.source || 'Planning') + '</span></div><div><span>Telefoon</span>' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : '<span>— ontbreekt</span>') + '</div></div>' +
       '<div class="skb" style="background:' + (t.schipper ? '#E4F0F0' : '#FBE3DF') + '"><div style="display:flex;align-items:center;gap:10px"><div class="ski">' + esc(t.schipper ? t.schipper.charAt(0).toUpperCase() : '?') + '</div><div><div class="m12" style="font-size:11px">Schipper</div><div class="b">' + esc(t.schipper || 'Nog niet ingedeeld') + '</div></div></div><button class="sbtn" data-act="edit">' + (t.schipper ? 'Wijzigen' : 'Indelen') + '</button></div>' +
       '<div><div class="m12" style="font-weight:500;margin-bottom:6px">Bijzonderheden</div><div class="nbox">' + esc(t.notes || '—') + '</div></div>' +
-      conflictBox(t) + waButtons(t) + secButtons(t) + '</div>';
+      conflictBox(t) + payBox(t) + waButtons(t) + secButtons(t) + '</div>';
   }
 
   /* ---------- laptop: maandagenda ---------- */
@@ -1125,7 +1145,7 @@ body{padding-top:env(safe-area-inset-top)}
       return '<button class="pill' + (on ? ' on' : '') + '" data-act="filter:' + k + '">' + l + '</button>';
     }
     return '<header class="card hdr"><div class="brand"><div class="logo">ABC</div><span class="sg brand-t">Agenda</span></div>' +
-      '<div class="pills">' + pill('all', 'Alle boten') + pill('schippers', 'Schippers') + pill('alf', 'Light Festival') + pill('offertes', 'Offertes') + '</div>' +
+      '<div class="pills">' + pill('all', 'Alle boten') + pill('schippers', 'Schippers') + pill('alf', 'Light Festival') + pill('offertes', 'Offertes') + pill('onbetaald', 'Onbetaald') + '</div>' +
       '<button class="btn-new" data-act="new">+ Nieuwe tocht</button></header>';
   }
   function alertBar(confs, noSk) {
@@ -1147,7 +1167,7 @@ body{padding-top:env(safe-area-inset-top)}
     var b = BOAT[bk(x)], label = x.kind === 'alf' ? alfLabel(x) : x.name;
     return '<button class="ev' + (x.id === S.sel ? ' on' : '') + '" style="background:' + b.bg + '" data-act="popsel:' + esc(x.date) + '|' + esc(x.id) + '" aria-label="Open ' + esc(label) + '">' +
       '<span class="d" style="background:' + b.dot + '"></span><b>' + esc(x.start || '') + '</b><span class="lb">' + esc(label) + '</span>' +
-      (x.warn ? '<span class="w" aria-label="Let op">!</span>' : '') + '</button>';
+      (x.warn ? '<span class="w" aria-label="Let op">!</span>' : '') + (x.paid ? '<span class="pd" title="Betaald">€</span>' : '') + '</button>';
   }
   function calHtml() {
     var a = S.anchor, gs = grStart(a), T = todayIso();
@@ -1200,6 +1220,7 @@ body{padding-top:env(safe-area-inset-top)}
       '<div style="display:flex;justify-content:space-between"><span style="display:flex;align-items:center;gap:8px"><span class="dt" style="background:#2F8A4E"></span>Bevestigd</span><span class="n" style="color:var(--mut)">' + mT.filter(function (t) { return t.status === 'Bevestigd'; }).length + '</span></div>' +
       '<div style="display:flex;justify-content:space-between"><span style="display:flex;align-items:center;gap:8px"><span class="dt" style="background:#D98A1F"></span>Optie / offerte</span><span style="color:var(--mut)">' + mT.filter(function (t) { return t.status !== 'Bevestigd'; }).length + '</span></div>' +
       '<div style="display:flex;justify-content:space-between"><span style="display:flex;align-items:center;gap:8px"><span class="dt" style="background:#C0392B"></span>Geen schipper</span><span style="color:var(--mut)">' + up.filter(function (t) { return t.noSkipper; }).length + '</span></div>' +
+      '<button class="lrow' + (S.filter === 'onbetaald' ? ' on' : '') + '" data-act="filter:onbetaald" style="font-size:13px"><span><span class="dt" style="background:#2F7FB5"></span>Betaald / nog niet</span><span class="n">' + mT.filter(function (t) { return t.status === 'Bevestigd' && t.paid; }).length + ' / ' + mT.filter(function (t) { return t.status === 'Bevestigd' && !t.paid; }).length + '</span></button>' +
       '</div></div>' +
       '<div class="card"><div class="ctitle">' + cap(NL_MON[mi(a)]) + ' in cijfers</div><div class="stats"><div class="stat"><div class="l">Tochten</div><div class="v">' + mT.length + '</div></div><div class="stat"><div class="l">Gasten</div><div class="v">' + mT.reduce(function (s, t) { return s + (t.pax || 0); }, 0) + '</div></div></div></div>' +
       '<button class="linkbtn" data-act="logout">' + (ABC.email() ? 'Ingelogd als ' + esc(ABC.email()) + ' · uitloggen' : 'Uitloggen') + ' · versie ' + APP_VERSION + '</button>' +
@@ -1275,7 +1296,7 @@ body{padding-top:env(safe-area-inset-top)}
     var alfSold = wAll.reduce(function (s, a) { return s + (a.booked || 0); }, 0);
     function wp(v, l, on) { return '<button class="wpill' + (on ? ' on' : '') + '" data-act="' + v + '">' + l + '</button>'; }
     var hdr = '<header class="card hdr wk"><div class="brand" style="gap:12px;margin-right:8px"><div class="logo lg">ABC</div><div class="brand-c"><span class="sg t">Amsterdam Boat Company</span><span class="m12">Planning · week ' + isoWeek(ws) + ' · ' + esc(weekRange(ws)) + '</span></div></div>' +
-      '<div class="pills" style="gap:8px">' + wp('view:week', 'Week', S.filter === 'all' || S.filter === 'schippers') + wp('view:month', 'Maand', false) + wp('filter:alf', 'Light Festival', S.filter === 'alf') + wp('filter:offertes', 'Offertes', S.filter === 'offertes') + wp('filter:schippers', 'Schippers', S.panel === 'schippers') + '</div>' +
+      '<div class="pills" style="gap:8px">' + wp('view:week', 'Week', S.filter === 'all' || S.filter === 'schippers') + wp('view:month', 'Maand', false) + wp('filter:alf', 'Light Festival', S.filter === 'alf') + wp('filter:offertes', 'Offertes', S.filter === 'offertes') + wp('filter:onbetaald', 'Onbetaald', S.filter === 'onbetaald') + wp('filter:schippers', 'Schippers', S.panel === 'schippers') + '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
       (noSk ? '<button class="hchip" style="background:#FBE3DF;color:#8A2A1C" data-act="problems">' + plural(noSk, 'tocht', 'tochten') + ' zonder schipper</button>' : '') +
       (confs.length ? '<button class="hchip" style="background:#FDEBD3;color:#7A4508" data-act="problems">' + plural(confs.length, 'bootconflict', 'bootconflicten') + '</button>' : '') +
@@ -1345,6 +1366,7 @@ body{padding-top:env(safe-area-inset-top)}
       (confs.length ? '<button style="background:#FDEBD3;color:#7A4508" data-act="problems">' + plural(confs.length, 'bootconflict', 'bootconflicten') + '</button>' : '') +
       (nextAlf ? '<button style="background:#EEF0FB;color:#2E3A86" data-act="day:' + nextAlf.date + '">ALF ' + NL_DOW_S[dow(nextAlf.date)] + ' ' + nextAlf.booked + '/' + (nextAlf.cap || '?') + '</button>' : '') +
       (S.problems ? '<button style="background:var(--ink);color:var(--card)" data-act="problems">Toon alles</button>' : '') +
+      '<button style="' + (S.filter === 'onbetaald' ? 'background:var(--ink);color:var(--card)' : 'background:#F3EEE6;color:#5A5146') + '" data-act="filter:onbetaald">' + (S.filter === 'onbetaald' ? 'Toon alles' : 'Onbetaald') + '</button>' +
       (cur !== T ? '<button style="background:var(--card);color:var(--ink)" data-act="nav:0">Vandaag</button>' : '') +
       '</div>';
     var body;
@@ -1394,14 +1416,29 @@ body{padding-top:env(safe-area-inset-top)}
       '<div class="tile"><div class="l">Drank</div><div class="v2">' + esc(drankLabel(t)) + '</div></div><div class="tile"><div class="l">Hapjes</div><div class="v2">' + esc(t.hapjes ? cap(t.hapjes) : '—') + '</div></div></div>' +
       '<div class="rows"><div><span>Opstap</span>' + locHtml(t.opstap) + '</div><div><span>Afstap</span>' + locHtml(t.afstap) + '</div><div><span>Weer</span><span>' + esc(wxTripText(t)) + '</span></div><div><span>Schipper</span><span>' + esc(t.schipper || 'Nog niet ingedeeld') + '</span></div><div><span>Telefoon</span>' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : '<span>Ontbreekt</span>') + '</div>' + (t.source ? '<div><span>Bron</span><span>' + esc(t.source) + '</span></div>' : '') + '</div>' +
       '<div class="nbox">' + esc(t.notes || '—') + '</div>' +
-      conflictBox(t) +
+      conflictBox(t) + payBox(t) +
       waButtons(t).replace(/class="abtn/g, 'style="padding:14px;font-size:14px" class="abtn') +
       '<div class="acts"><button class="abtn ghost" data-act="edit">' + (t.schipper ? 'Bewerken' : 'Schipper indelen') + '</button><a class="abtn ghost" href="' + esc(sheetLink(t)) + '" target="_blank" rel="noopener">Open in sheet</a></div>' + delBtn(t);
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '14';
+  var APP_VERSION = '15';
   var SWIPE_IN = '';
+  var PAYING = null;
+  function setPaidLocal(id, val) {
+    if (DATA) DATA.trips.forEach(function (t) { if (t.id === id) t.paid = val; });
+    Object.keys(CACHE).forEach(function (k) {
+      var c = CACHE[k]; if (c && c.trips) c.trips.forEach(function (t) { if (t.id === id) t.paid = val; });
+      if (c && c.raw && c.raw.trips) c.raw.trips.forEach(function (t) { if (t.id === id) t.paid = val; });
+    });
+    try {
+      Object.keys(localStorage).filter(function (k) { return /^abc_\d{4}-/.test(k); }).forEach(function (k) {
+        var d = JSON.parse(localStorage.getItem(k)), hit = false;
+        (d.trips || []).forEach(function (t) { if (t.id === id) { t.paid = val; hit = true; } });
+        if (hit) localStorage.setItem(k, JSON.stringify(d));
+      });
+    } catch (e) { /* */ }
+  }
   function render() {
     S.mobile = window.innerWidth < 760;
     var app = document.getElementById('app');
@@ -1483,6 +1520,20 @@ body{padding-top:env(safe-area-inset-top)}
         if (S.mobile) { setAnchor(S.mMonth ? (function () { var m = addMonths(S.anchor, n); return m.slice(0, 7) === todayIso().slice(0, 7) ? todayIso() : m; })() : add(S.anchor, 7 * n)); return; }
         if (S.view === 'month') { var m2 = addMonths(S.anchor, n); setAnchor(m2.slice(0, 7) === todayIso().slice(0, 7) ? todayIso() : m2); return; }
         setAnchor(add(S.anchor, S.view === 'week' ? 7 * n : n)); return;
+      case 'paid':
+        var pt = findItem(v);
+        if (!pt || PAYING) return;
+        if (!ABC.authValid()) { toast('Je bent uitgelogd. Log eerst in.'); return; }
+        var nw = !pt.paid;
+        PAYING = pt.id; render();
+        timed(rpc('setPaid', [pt.id, pt.klantRaw, nw]), 30000).then(function () {
+          PAYING = null; setPaidLocal(pt.id, nw); render();
+          toast(nw ? 'Op betaald gezet in de sheet' : 'Betaald teruggezet');
+        }, function (err) {
+          PAYING = null; render();
+          toast(/intussen/i.test((err && err.message) || '') ? 'De regel is in de sheet verschoven. Ververs en probeer opnieuw.' : ((err && err.message) || 'Opslaan is niet gelukt'));
+        });
+        return;
       case 'filter':
         if (v === 'all') { S.filter = 'all'; S.boat = null; S.skipper = null; S.problems = false; if (S.panel === 'schippers') S.panel = null; }
         else if (v === 'schippers') { if (S.panel === 'schippers') { S.panel = null; S.filter = 'all'; S.skipper = null; } else { S.filter = 'schippers'; S.panel = 'schippers'; S.sel = null; } }
@@ -1602,7 +1653,7 @@ body{padding-top:env(safe-area-inset-top)}
     var f = {
       datum: el.datum.value, start: el.start.value, end: el.end.value, naam: el.naam.value.trim(), tel: el.tel.value.trim(),
       pax: el.pax.value, drank: el.drank.value, hapjes: el.hapjes.value.trim(), opstap: locVal(el, 'opstap'), afstap: locVal(el, 'afstap'),
-      boot: el.boot.value, schipper: el.schipper.value, status: el.status.value, notes: el.notes.value.trim(), en: el.en.checked
+      boot: el.boot.value, schipper: el.schipper.value, status: el.status.value, notes: el.notes.value.trim(), en: el.en.checked, betaald: !!(el.betaald && el.betaald.checked)
     };
     var problem = !f.datum ? 'Kies een datum.' : (!f.naam ? 'Vul de naam van de klant in.' : (!f.start ? 'Vul een begintijd in.' : ''));
     if (problem) { showFormErr(problem); return; }

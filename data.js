@@ -105,7 +105,8 @@
         withFailureHandler: function (f) { fail = f; return c; },
         getData: function (a, b) { call('getData', [a, b]).then(ok, fail); },
         saveTrip: function (f) { call('saveTrip', [f]).then(ok, fail); },
-        deleteTrip: function (i, k) { call('deleteTrip', [i, k]).then(ok, fail); }
+        deleteTrip: function (i, k) { call('deleteTrip', [i, k]).then(ok, fail); },
+        setPaid: function (i, k, v) { call('setPaid', [i, k, v]).then(ok, fail); }
       };
       return c;
     }
