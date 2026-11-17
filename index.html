@@ -318,7 +318,8 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .dp-meta{font-size:12px;color:var(--mut);margin-top:2px}
 .dp-row .flags{margin-top:6px}
 .dp-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-@media (max-width:700px){.dp-row{grid-template-columns:1fr}.dp-right{align-items:flex-start;flex-direction:row}}
+body:has(.dpov) .fab{display:none}
+@media (max-width:700px){.dp-row{grid-template-columns:1fr}.dp-right{align-items:flex-start;flex-direction:row}.dpov{padding:calc(env(safe-area-inset-top) + 14px) 10px 100px}.dpcard{padding:16px;border-radius:20px;gap:12px}.dp-h h2{font-size:21px}.dp-h{flex-wrap:wrap}}
 .lang{display:inline-block;vertical-align:middle;margin-left:6px;border-radius:5px;padding:1px 5px;font-size:10px;font-weight:700;letter-spacing:.06em;background:#EFE8DD;color:#5A5146;font-family:Inter,system-ui,sans-serif}
 .lang.en{background:#E1EBF6;color:#2F5E8E}
 .linkbtn{border:0;background:transparent;color:var(--mut);font-size:12px;text-decoration:underline;padding:4px;align-self:flex-start}
@@ -1340,7 +1341,7 @@ body{padding-top:env(safe-area-inset-top)}
         var d = add(gs, i), inM = d.slice(0, 7) === cur.slice(0, 7);
         var its = inM ? dayItems(d) : [];
         var dots = its.slice(0, 4).map(function (x) { return '<i style="background:' + BOAT[bk(x)].dot + '"></i>'; }).join('');
-        cells += '<button class="mm-d' + (inM ? '' : ' out') + (d === cur ? ' on' : '') + (d === T ? ' today' : '') + '" data-act="day:' + d + '" aria-label="' + esc(longDate(d)) + '">' + dn(d) + '<span class="mm-dots">' + dots + '</span></button>';
+        cells += '<button class="mm-d' + (inM ? '' : ' out') + (d === cur ? ' on' : '') + (d === T ? ' today' : '') + '" data-act="' + (inM ? 'daypop:' : 'day:') + d + '" aria-label="' + esc(longDate(d)) + '">' + dn(d) + '<span class="mm-dots">' + dots + '</span></button>';
       }
       body = '<div class="mswipe' + (SWIPE_IN ? ' in-' + SWIPE_IN : '') + '" data-swipe="month"><div class="mmonth"><div class="mm-g">' + NL_DOW_S.map(function (w) { return '<div class="w">' + w.toUpperCase() + '</div>'; }).join('') + cells + '</div></div>' +
         '<button class="mhandle" data-act="mmonth" aria-label="Maand dichtklappen"><i></i></button></div>';
@@ -1362,7 +1363,7 @@ body{padding-top:env(safe-area-inset-top)}
         '<div class="mcard"><div class="h sg">Aandachtspunten deze week</div><div style="display:flex;flex-direction:column;gap:8px">' + todoHtml(todoList(wT, confs), 5) + '</div></div>' +
         '<button class="linkbtn" data-act="logout">' + (ABC.email() ? 'Ingelogd als ' + esc(ABC.email()) + ' · uitloggen' : 'Uitloggen') + '</button>';
     }
-    var overlay = '';
+    var overlay = (S.dayPop && DATA && !S.sel && S.panel !== 'form') ? dayPopHtml(S.dayPop) : '';
     if (S.panel === 'form') {
       overlay = '<div class="ov" data-act="closeform"><div class="sheet" data-act="noop"><div class="grab"></div>' + formHtml(true) + '</div></div>';
     } else if (S.sel && findItem(S.sel)) {
@@ -1440,7 +1441,11 @@ body{padding-top:env(safe-area-inset-top)}
           toast((e && e.message) || 'Vaarkaart maken is niet gelukt.');
         });
         return;
-      case 'daypop': S.dayPop = v; S.sel = null; if (S.panel !== 'form') S.panel = null; render(); return;
+      case 'daypop': S.dayPop = v; if (S.mobile) S.anchor = v; S.sel = null; if (S.panel !== 'form') S.panel = null; render();
+        // tijdlijn meteen naar de eerste tocht schuiven (op een smal scherm valt die anders buiten beeld)
+        var tl = document.querySelector('.dpcard .tl'), fb = tl && tl.querySelector('.tl-blk');
+        if (tl && fb && tl.scrollWidth > tl.clientWidth) { var lft = Infinity; tl.querySelectorAll('.tl-blk').forEach(function (b) { lft = Math.min(lft, b.offsetLeft); }); tl.scrollLeft = Math.max(0, lft + 92 - 40); }
+        return;
       case 'closepop': S.dayPop = null; render(); return;
       case 'popsel':
         var pi = v.indexOf('|');
@@ -1498,7 +1503,7 @@ body{padding-top:env(safe-area-inset-top)}
 
   /* ---------- vegen op de telefoon ---------- */
   var TS = null, NOCLICK = 0;
-  function swipeOk() { return S.mobile && S.panel !== 'form' && !S.sel && !document.querySelector('.ov,.popov'); }
+  function swipeOk() { return S.mobile && S.panel !== 'form' && !S.sel && !document.querySelector('.ov,.dpov'); }
   function pullTip(txt, y) {
     var t = document.querySelector('.mpull');
     if (!txt) { if (t) t.remove(); return; }
@@ -1534,21 +1539,21 @@ body{padding-top:env(safe-area-inset-top)}
     var T = TS; TS = null; pullTip('');
     if (T.box && T.dir === 'h') { T.box.classList.add('back'); T.box.style.transform = ''; }
     if (T.dir === 'h' && T.box && Math.abs(T.dx) > 50) {
-      NOCLICK = Date.now() + 400;
+      NOCLICK = performance.now() + 400;
       var dir = T.dx < 0 ? 1 : -1;
       swipeGo(dir > 0 ? 'l' : 'r', dir);
     } else if (T.dir === 'v' && T.dy > 70 && T.top && !S.mMonth) {
-      NOCLICK = Date.now() + 400;
+      NOCLICK = performance.now() + 400;
       S.mMonth = true; swipeGo('d', 0);
     } else if (T.dir === 'v' && T.dy < -50 && S.mMonth && T.box) {
-      NOCLICK = Date.now() + 400;
+      NOCLICK = performance.now() + 400;
       S.mMonth = false; swipeGo('d', 0);
     }
   }, { passive: true });
   document.addEventListener('touchcancel', function () { if (TS && TS.box) TS.box.style.transform = ''; TS = null; pullTip(''); }, { passive: true });
 
   document.addEventListener('click', function (e) {
-    if (Date.now() < NOCLICK) { e.preventDefault(); e.stopPropagation(); return; }
+    if (performance.now() < NOCLICK) { e.preventDefault(); e.stopPropagation(); return; }
     var el = e.target.closest('[data-act]');
     if (!el) return;
     if (el.tagName === 'A') return;
