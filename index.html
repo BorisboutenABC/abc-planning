@@ -248,6 +248,15 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .mcard{background:var(--card);border-radius:18px;padding:14px}
 .mcard .h{font-weight:700;font-size:15px;margin-bottom:8px}
 .mmonth{background:var(--card);border-radius:18px;padding:12px}
+.mswipe{touch-action:pan-y;will-change:transform}
+.mswipe.back{transition:transform .2s ease}
+.mswipe.in-l{animation:inL .22s ease}.mswipe.in-r{animation:inR .22s ease}.mswipe.in-d{animation:inD .25s ease}
+@keyframes inL{from{transform:translateX(40px);opacity:.3}to{transform:none;opacity:1}}
+@keyframes inR{from{transform:translateX(-40px);opacity:.3}to{transform:none;opacity:1}}
+@keyframes inD{from{transform:translateY(-24px);opacity:.3}to{transform:none;opacity:1}}
+.mhandle{display:flex;justify-content:center;align-items:center;gap:6px;width:100%;border:0;background:none;padding:6px 0 2px;color:#9A9084;font:600 11px Inter,system-ui,sans-serif;letter-spacing:.04em}
+.mhandle i{display:block;width:36px;height:4px;border-radius:2px;background:#D9D0C3}
+.mpull{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 8px);transform:translate(-50%,-60px);background:var(--card);border-radius:999px;padding:6px 14px;font:600 12px Inter,system-ui,sans-serif;color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.12);z-index:50;pointer-events:none;transition:transform .15s ease}
 .mm-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .mm-h .t{font-weight:700;font-size:17px}
 .mm-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
@@ -1333,7 +1342,8 @@ body{padding-top:env(safe-area-inset-top)}
         var dots = its.slice(0, 4).map(function (x) { return '<i style="background:' + BOAT[bk(x)].dot + '"></i>'; }).join('');
         cells += '<button class="mm-d' + (inM ? '' : ' out') + (d === cur ? ' on' : '') + (d === T ? ' today' : '') + '" data-act="day:' + d + '" aria-label="' + esc(longDate(d)) + '">' + dn(d) + '<span class="mm-dots">' + dots + '</span></button>';
       }
-      body = '<div class="mmonth"><div class="mm-g">' + NL_DOW_S.map(function (w) { return '<div class="w">' + w.toUpperCase() + '</div>'; }).join('') + cells + '</div></div>';
+      body = '<div class="mswipe' + (SWIPE_IN ? ' in-' + SWIPE_IN : '') + '" data-swipe="month"><div class="mmonth"><div class="mm-g">' + NL_DOW_S.map(function (w) { return '<div class="w">' + w.toUpperCase() + '</div>'; }).join('') + cells + '</div></div>' +
+        '<button class="mhandle" data-act="mmonth" aria-label="Maand dichtklappen"><i></i></button></div>';
     } else {
       var strip = '<div class="strip">';
       for (var j = 0; j < 7; j++) {
@@ -1341,6 +1351,7 @@ body{padding-top:env(safe-area-inset-top)}
         strip += '<button class="sday' + (on ? ' on' : '') + (dd === T ? ' today' : '') + '" data-act="day:' + dd + '" aria-label="' + esc(longDate(dd)) + '"><span class="a">' + cap(NL_DOW_S[j]) + '</span><span class="n">' + dn(dd) + '</span><i style="background:' + (has ? (on ? '#F2C49B' : '#C2662D') : 'transparent') + '"></i></button>';
       }
       strip += '</div>';
+      strip = '<div class="mswipe' + (SWIPE_IN ? ' in-' + SWIPE_IN : '') + '" data-swipe="week">' + strip + '<button class="mhandle" data-act="mmonth" aria-label="Maandoverzicht openen"><i></i></button></div>';
       var items = dayItems(cur), trips = items.filter(function (x) { return x.kind !== 'alf'; }), alfs = items.filter(function (x) { return x.kind === 'alf'; });
       var pax = trips.reduce(function (s, t) { return s + (t.pax || 0); }, 0);
       body = strip +
@@ -1373,6 +1384,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
+  var SWIPE_IN = '';
   function render() {
     S.mobile = window.innerWidth < 760;
     var app = document.getElementById('app');
@@ -1484,7 +1496,59 @@ body{padding-top:env(safe-area-inset-top)}
     if (el) el.focus();
   }
 
+  /* ---------- vegen op de telefoon ---------- */
+  var TS = null, NOCLICK = 0;
+  function swipeOk() { return S.mobile && S.panel !== 'form' && !S.sel && !document.querySelector('.ov,.popov'); }
+  function pullTip(txt, y) {
+    var t = document.querySelector('.mpull');
+    if (!txt) { if (t) t.remove(); return; }
+    if (!t) { t = document.createElement('div'); t.className = 'mpull'; document.body.appendChild(t); }
+    t.textContent = txt; t.style.transform = 'translate(-50%,' + Math.min(0, y - 70) + 'px)';
+  }
+  function swipeGo(kind, dir) {
+    SWIPE_IN = kind;
+    if (dir) act('nav:' + dir); else render();
+    SWIPE_IN = '';
+  }
+  document.addEventListener('touchstart', function (e) {
+    TS = null;
+    if (!swipeOk() || e.touches.length !== 1) return;
+    var t = e.touches[0], box = e.target.closest && e.target.closest('[data-swipe]');
+    TS = { x: t.clientX, y: t.clientY, box: box, top: (window.scrollY || document.documentElement.scrollTop || 0) <= 2, dx: 0, dy: 0, dir: '' };
+  }, { passive: true });
+  document.addEventListener('touchmove', function (e) {
+    if (!TS) return;
+    var t = e.touches[0];
+    TS.dx = t.clientX - TS.x; TS.dy = t.clientY - TS.y;
+    if (!TS.dir && (Math.abs(TS.dx) > 10 || Math.abs(TS.dy) > 10)) TS.dir = Math.abs(TS.dx) > Math.abs(TS.dy) ? 'h' : 'v';
+    if (TS.dir === 'h' && TS.box) {
+      TS.box.classList.remove('back');
+      TS.box.style.transform = 'translateX(' + Math.round(TS.dx * 0.6) + 'px)';
+    } else if (TS.dir === 'v' && TS.dy > 0 && TS.top && !S.mMonth) {
+      pullTip(TS.dy > 70 ? 'Loslaten voor maandoverzicht' : 'Trek omlaag voor de maand', TS.dy);
+      if (e.cancelable) e.preventDefault();
+    }
+  }, { passive: false });
+  document.addEventListener('touchend', function () {
+    if (!TS) return;
+    var T = TS; TS = null; pullTip('');
+    if (T.box && T.dir === 'h') { T.box.classList.add('back'); T.box.style.transform = ''; }
+    if (T.dir === 'h' && T.box && Math.abs(T.dx) > 50) {
+      NOCLICK = Date.now() + 400;
+      var dir = T.dx < 0 ? 1 : -1;
+      swipeGo(dir > 0 ? 'l' : 'r', dir);
+    } else if (T.dir === 'v' && T.dy > 70 && T.top && !S.mMonth) {
+      NOCLICK = Date.now() + 400;
+      S.mMonth = true; swipeGo('d', 0);
+    } else if (T.dir === 'v' && T.dy < -50 && S.mMonth && T.box) {
+      NOCLICK = Date.now() + 400;
+      S.mMonth = false; swipeGo('d', 0);
+    }
+  }, { passive: true });
+  document.addEventListener('touchcancel', function () { if (TS && TS.box) TS.box.style.transform = ''; TS = null; pullTip(''); }, { passive: true });
+
   document.addEventListener('click', function (e) {
+    if (Date.now() < NOCLICK) { e.preventDefault(); e.stopPropagation(); return; }
     var el = e.target.closest('[data-act]');
     if (!el) return;
     if (el.tagName === 'A') return;
