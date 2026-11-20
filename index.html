@@ -224,6 +224,30 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .fg input,.fg select{border:1px solid var(--bd);border-radius:12px;padding:10px;font-size:14px;background:var(--card);color:var(--ink);min-width:0;width:100%;-webkit-appearance:none;appearance:none}
 .fg select{background-image:linear-gradient(45deg,transparent 50%,#6B6257 50%),linear-gradient(135deg,#6B6257 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:28px}
 .fg input:focus,.fg select:focus{outline:2px solid var(--zaza);outline-offset:1px}
+.tp{display:flex;align-items:center;gap:4px}
+.fg .tp select{background-image:none;padding:10px 4px;text-align:center;text-align-last:center;font-size:16px;font-weight:600}
+.fg .tp b{font-weight:700;color:var(--mut)}
+.tk{display:flex;flex-direction:column;gap:6px}
+.tk-h{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:700;color:#2E3A86;margin-top:2px}
+.tk-h span:last-child{font-weight:500;color:var(--mut)}
+.tk-sh{font-size:12px;font-weight:700;color:var(--mut);margin-top:6px}
+.tkr{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.tkr summary{list-style:none;display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;font-size:14px}
+.tkr summary::-webkit-details-marker{display:none}
+.tkr summary .n{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tkr summary .p{font-size:12px;color:var(--mut);white-space:nowrap}
+.tkr summary .ar{color:var(--mut2);transition:transform .15s;font-size:12px}
+.tkr[open] summary .ar{transform:rotate(90deg)}
+.tkr[open] summary{border-bottom:1px solid var(--line)}
+.tk-b{padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.tk-b>div{display:flex;justify-content:space-between;gap:10px}
+.tk-b>div>span:first-child{color:var(--mut);flex:none}
+.tk-b>div>span:last-child,.tk-b>div>a{text-align:right;word-break:break-word}
+.tk-b a{color:#2E3A86;font-weight:600;text-decoration:none}
+.tk-act{display:flex;gap:8px;margin-top:4px}
+.tk-b .tk-act a{flex:1;text-align:center;padding:9px;border-radius:12px;background:#EEF0FB;color:#2E3A86;font-weight:600}
+.tk-b .tk-act a.wa{background:#E3F2E7;color:#2E5B3C}
+.tk-msg{font-size:12px;color:var(--mut);padding:4px 2px}
 .fg label.ck{flex-direction:row;align-items:center;gap:8px;grid-column:1/-1}
 .fg label.ck input{width:20px;height:20px;-webkit-appearance:checkbox;appearance:auto;accent-color:var(--zaza)}
 .save{border:0;border-radius:14px;padding:13px;background:var(--zaza);color:var(--card);font-weight:700;font-size:14px}
@@ -440,6 +464,7 @@ body{padding-top:env(safe-area-inset-top)}
     DATA = CACHE[gs] || null;
     if (!DATA) { try { var ls = localStorage.getItem('abc_' + gs); if (ls) DATA = prep(JSON.parse(ls)); } catch (e) {} }
     LOADING = true;
+    if (force) { TK_FRESH = false; TK_ERR = null; }
     render();
     if (!ABC.authValid()) { ERR = 'AUTH'; LOADING = false; render(); return; }
     ABC.run()
@@ -1031,8 +1056,8 @@ body{padding-top:env(safe-area-inset-top)}
       (!ABC.authValid() ? '<div class="fwarn">Je bent uitgelogd, dus opslaan lukt nu niet. <button type="button" class="sbtn" data-act="login" style="margin-left:6px">Inloggen met Google</button></div>' : '') +
       '<div class="fg">' +
       '<label class="w"><span>Datum</span><input type="date" name="datum" required value="' + esc(v.datum) + '"></label>' +
-      '<label class="' + h + '"><span>Begintijd</span><input type="time" name="start" step="300" value="' + esc(v.start) + '"></label>' +
-      '<label class="' + h + '"><span>Eindtijd</span><input type="time" name="end" step="300" value="' + esc(v.end) + '"></label>' +
+      timeField('start', 'Begintijd', v.start, h) +
+      timeField('end', 'Eindtijd', v.end, h) +
       '<label class="w"><span>Klant</span><input type="text" name="naam" placeholder="Naam klant" required value="' + esc(v.naam) + '"></label>' +
       '<label class="' + h + '"><span>Telefoon</span><input type="tel" name="tel" inputmode="tel" placeholder="+31 6 …" value="' + esc(v.tel) + '"></label>' +
       '<label class="' + h + '"><span>Pax</span><input type="number" name="pax" inputmode="numeric" min="0" placeholder="20" value="' + esc(v.pax) + '"></label>' +
@@ -1051,6 +1076,26 @@ body{padding-top:env(safe-area-inset-top)}
       '<div id="fwarn"></div>' +
       '<button type="submit" class="save"' + (SAVING ? ' disabled' : '') + '>' + (SAVING ? 'Opslaan…' : 'Tocht opslaan') + '</button>' +
       '</form>';
+  }
+  /* eigen tijdkiezer: uur + minuten (de Android-klok viel van het scherm) */
+  function timeField(name, label, val, cls) {
+    var m = /^(\d{1,2}):(\d{2})/.exec(val || ''), hh = m ? ('0' + m[1]).slice(-2) : '', mm = m ? m[2] : '';
+    var hrs = [], mins = [];
+    for (var i = 8; i < 32; i++) hrs.push(('0' + (i % 24)).slice(-2));
+    for (var j = 0; j < 60; j += 5) mins.push(('0' + j).slice(-2));
+    if (mm && mins.indexOf(mm) < 0) { mins.push(mm); mins.sort(); }
+    return '<label class="' + cls + '"><span>' + label + '</span><div class="tp">' +
+      '<select data-tp="' + name + '" data-part="h" aria-label="' + label + ' uur">' + opt('', '--', hh) + hrs.map(function (x) { return opt(x, x, hh); }).join('') + '</select><b>:</b>' +
+      '<select data-tp="' + name + '" data-part="m" aria-label="' + label + ' minuten">' + opt('', '--', mm) + mins.map(function (x) { return opt(x, x, mm); }).join('') + '</select>' +
+      '</div><input type="hidden" name="' + name + '" value="' + esc(hh ? hh + ':' + (mm || '00') : '') + '"></label>';
+  }
+  function syncTime(sel) {
+    var f = sel.form, n = sel.getAttribute('data-tp');
+    if (!f || !f.elements[n]) return;
+    var h = f.querySelector('select[data-tp="' + n + '"][data-part="h"]'), m = f.querySelector('select[data-tp="' + n + '"][data-part="m"]');
+    if (h.value && !m.value) m.value = '00';
+    if (!h.value && sel === h) m.value = '';
+    f.elements[n].value = h.value ? h.value + ':' + (m.value || '00') : '';
   }
   function checkFormConflict(form) {
     var box = document.getElementById('fwarn');
@@ -1086,6 +1131,79 @@ body{padding-top:env(safe-area-inset-top)}
           (r.n ? plural(r.n, 'tocht', 'tochten') + '<br>eerst ' + esc(shortDate(r.next.date)) + ' ' + esc(r.next.start || '') : '—') + '</span></button>';
       }).join('') + '</div></div>';
   }
+  /* ---------- Light Festival: namenlijst losse tickets (tab "ALF 2027 tickets") ---------- */
+  var TICKETS = null, TK_LOADING = false, TK_ERR = null, TK_FRESH = false, TK_OPEN = {};
+  try { var tkSaved = JSON.parse(localStorage.getItem('abc_tickets') || 'null'); if (tkSaved && tkSaved.length) TICKETS = tkSaved.map(prepTicket); } catch (e) { /* */ }
+  function prepTicket(r) {
+    var o = {}; for (var k in r) o[k] = r[k];
+    var d = /(\d{1,2})-(\d{1,2})-(\d{4})/.exec(r.datum || '');
+    o.date = d ? d[3] + '-' + ('0' + d[2]).slice(-2) + '-' + ('0' + d[1]).slice(-2) : '';
+    var t = /(\d{1,2})[:.](\d{2})/.exec(r.shift || '');
+    o.start = t ? ('0' + t[1]).slice(-2) + ':' + t[2] : '';
+    o.paxN = parseInt(r.pax, 10) || 0;
+    return o;
+  }
+  function loadTickets(force) {
+    if (TK_LOADING || (TK_FRESH && !force)) return;
+    if (!ABC.authValid()) return;
+    TK_LOADING = true;
+    timed(rpc('getTickets', []), 45000).then(function (rows) {
+      TK_LOADING = false; TK_ERR = null; TK_FRESH = true;
+      var js = JSON.stringify(rows || []), old = null;
+      try { old = localStorage.getItem('abc_tickets'); localStorage.setItem('abc_tickets', js); } catch (e) { /* */ }
+      TICKETS = (rows || []).map(prepTicket);
+      if (js !== old) render();
+    }, function (e) {
+      TK_LOADING = false; TK_FRESH = true;
+      var m = (e && e.message) || String(e);
+      TK_ERR = /getTickets|onbekend|unknown|not a function|is not defined/i.test(m) ? 'De namenlijst staat nog niet aan in de planning-koppeling (Apps Script).' : m;
+      render();
+    });
+  }
+  function waNum(tel) {
+    var d = String(tel || '').replace(/[^\d+]/g, '');
+    if (d.indexOf('+') === 0) return d.slice(1);
+    if (d.indexOf('00') === 0) return d.slice(2);
+    if (/^06\d{8}$/.test(d)) return '31' + d.slice(1);
+    return d;
+  }
+  var PLAT = { getyourguide: ['#FDE7DA', '#A2441B', 'GYG'], prio: ['#E3E6FA', '#2E3A86', 'Prio'], website: ['#E3F2E7', '#2E5B3C', 'Website'], trytn: ['#F1E4F7', '#6A2F86', 'Trytn'], social: ['#FBE3DF', '#9A2B1E', 'Social Deal'] };
+  function platChip(p) {
+    var k = Object.keys(PLAT).filter(function (x) { return String(p || '').toLowerCase().replace(/\s/g, '').indexOf(x) >= 0; })[0];
+    var c = k ? PLAT[k] : ['#EFE8DD', '#4A433A', p || '?'];
+    return chip(k ? c[2] : (p || '?'), c);
+  }
+  function ticketRow(r) {
+    var tel = waNum(r.telefoon), en = /EN/.test(r.whatsapp || '');
+    var rows = [
+      ['Telefoon', r.telefoon ? '<a href="tel:+' + esc(tel) + '">' + esc(r.telefoon) + '</a>' : '—'],
+      ['Geboekt via', esc(r.platform || '—')],
+      ['Boekingsnr', esc(r.boekingsnr || '—')],
+      ['Gasten', esc(r.pax || '—')]
+    ];
+    if (r.opmerkingen) rows.push(['Drank / opm.', esc(r.opmerkingen)]);
+    if (r.boot) rows.push(['Boot', esc(r.boot)]);
+    if (r.opstap) rows.push(['Opstap', esc(r.opstap)]);
+    if (r.email) rows.push(['E-mail', '<a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>']);
+    if (en) rows.push(['Taal', 'Engels']);
+    var key = r.row || (r.naam + r.date);
+    return '<details class="tkr" data-tk="' + esc(key) + '"' + (TK_OPEN[key] ? ' open' : '') + '><summary><span class="n">' + esc(r.naam) + '</span><span class="p">' + esc(r.pax || '?') + ' pax</span>' + platChip(r.platform) + '<span class="ar">▶</span></summary>' +
+      '<div class="tk-b">' + rows.map(function (x) { return '<div><span>' + x[0] + '</span><span>' + x[1] + '</span></div>'; }).join('') +
+      (tel ? '<div class="tk-act"><a href="tel:+' + esc(tel) + '">Bellen</a><a class="wa" target="_blank" rel="noopener" href="https://wa.me/' + esc(tel) + '">WhatsApp</a></div>' : '') +
+      '</div></details>';
+  }
+  function ticketList(a) {
+    if (!TK_FRESH && !TK_LOADING && !TK_ERR) setTimeout(function () { loadTickets(); }, 0);
+    if (!TICKETS) {
+      return '<div class="tk-msg">' + (TK_ERR ? esc(TK_ERR) : (ABC.authValid() ? 'Namenlijst laden…' : 'Log in om de namenlijst te zien.')) + '</div>';
+    }
+    var list = TICKETS.filter(function (r) { return r.naam && r.date === a.date && (!a.start || !r.start || r.start === a.start); })
+      .sort(function (x, y) { return x.naam.localeCompare(y.naam); });
+    var pax = list.reduce(function (s, r) { return s + r.paxN; }, 0);
+    if (!list.length) return '<div class="tk-msg">Nog geen namen in de lijst voor deze shift.</div>';
+    return '<div class="tk"><div class="tk-h"><span>Gasten</span><span>' + plural(list.length, 'boeking', 'boekingen') + ' · ' + pax + ' pax</span></div>' +
+      list.map(ticketRow).join('') + '</div>';
+  }
   function alfDetail(a) {
     var boats = (a.boats || []).filter(function (b) { return b.boat; });
     return '<div class="dpad" style="display:flex;flex-direction:column;gap:12px">' +
@@ -1094,6 +1212,7 @@ body{padding-top:env(safe-area-inset-top)}
       (boats.length ? '<div class="rows">' + boats.map(function (b) {
         return '<div><span>' + esc(b.boat) + '</span><span>' + esc(b.schipper || 'geen schipper') + (b.host ? ' · host ' + esc(b.host) : '') + (b.pax ? ' · ' + b.pax + ' pax' : '') + '</span></div>';
       }).join('') + '</div>' : '') +
+      ticketList(a) +
       (a.status ? '<div class="m12">Status: ' + esc(a.status) + '</div>' : '') +
       '<a class="abtn ghost" href="' + esc(sheetLink(a)) + '" target="_blank" rel="noopener">Open in sheet</a></div>';
   }
@@ -1422,7 +1541,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '15';
+  var APP_VERSION = '16';
   var SWIPE_IN = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -1632,11 +1751,16 @@ body{padding-top:env(safe-area-inset-top)}
     e.preventDefault();
     act(a);
   });
+  document.addEventListener('toggle', function (e) {
+    var k = e.target.getAttribute && e.target.getAttribute('data-tk');
+    if (k) { if (e.target.open) TK_OPEN[k] = 1; else delete TK_OPEN[k]; }
+  }, true);
   document.addEventListener('input', function (e) {
     var f = e.target.form;
     if (f && f.id === 'tripForm') checkFormConflict(f);
   });
   document.addEventListener('change', function (e) {
+    if (e.target.getAttribute && e.target.getAttribute('data-tp')) syncTime(e.target);
     var ln = e.target.getAttribute && e.target.getAttribute('data-loc');
     if (ln && e.target.form) {
       var inp = e.target.form.elements[ln];
