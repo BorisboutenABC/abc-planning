@@ -227,6 +227,15 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .tp{display:flex;align-items:center;gap:4px}
 .fg .tp select{background-image:none;padding:10px 4px;text-align:center;text-align-last:center;font-size:16px;font-weight:600}
 .fg .tp b{font-weight:700;color:var(--mut)}
+.ovl{background:#FBE3DF;border:1px solid #F0B8AE;border-radius:16px;margin:0 0 12px;overflow:hidden}
+.ovl.soft{background:#FDEBD3;border-color:#F2CD9C}
+.ovl .ovl-h{border:0;background:none;width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;font-weight:700;color:#8A2A1C;font-size:14px;text-align:left}
+.ovl.soft .ovl-h{color:#7A4508}
+.ovl-h span{font-weight:600;font-size:12px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.7);white-space:nowrap}
+.ovl-l{display:flex;flex-direction:column;gap:6px;padding:0 10px 12px}
+.ovl .ovl-l button{border:0;box-shadow:none;width:100%;text-align:left;background:#fff;border-radius:12px;padding:9px 12px;font-size:13px;line-height:1.35;color:var(--ink)}
+.ovl-l button>b{display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#8A2A1C;margin-bottom:2px}
+.ovl-tip{font-size:12px;color:#6B3A2E;padding:2px 4px}
 .acrew{display:flex;flex-direction:column;gap:8px}
 .acb{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
 .acb-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
@@ -482,6 +491,7 @@ body{padding-top:env(safe-area-inset-top)}
         CACHE[gs] = prep(d);
         try { localStorage.setItem('abc_' + gs, JSON.stringify(d)); } catch (e) {}
         LOADED_AT = Date.now();
+        if (force || !SEASON || !SEASON.at || Date.now() - SEASON.at > 5 * 60e3) loadSeason();
         prefetch(addMonths(S.anchor, 1)); prefetch(addMonths(S.anchor, -1));
         if (rangeKey() === gs) DATA = CACHE[gs];
         if (S.panel === 'form') return;
@@ -1310,6 +1320,66 @@ body{padding-top:env(safe-area-inset-top)}
       '<div class="pills">' + pill('all', 'Alle boten') + pill('schippers', 'Schippers') + pill('alf', 'Light Festival') + pill('offertes', 'Offertes') + pill('onbetaald', 'Onbetaald') + '</div>' +
       '<button class="btn-new" data-act="new">+ Nieuwe tocht</button></header>';
   }
+
+  /* ---------- Seizoenscontrole: privévaart overlapt losse tickets (en privé onderling) ---------- */
+  var SEASON = null, SEASON_LOADING = false, SEASON_OPEN = false, SEASON_END = '2027-01-31';
+  try { var sz = JSON.parse(localStorage.getItem('abc_season') || 'null'); if (sz && sz.d) SEASON = seasonCheck(sz.d); } catch (e) { /* */ }
+  function bkey(b) { b = String(b || '').toLowerCase(); return /zaza/.test(b) ? 'zaza' : (/mosi/.test(b) ? 'mosi' : ''); }
+  function seasonCheck(d) {
+    var T = todayIso(), P = prep(d), out = [];
+    var trips = P.trips.filter(function (t) { return t.date >= T && t.startMin != null; });
+    P.alfs.forEach(function (a) {
+      if (a.date < T || a.startMin == null || a.id.indexOf('alf:') !== 0) return;
+      var aEnd = a.endMin != null ? a.endMin : a.startMin + 75;
+      var tb = (a.boats || []).filter(function (b) { return /tickets/i.test(b.status || a.status || 'Tickets'); });
+      if (!tb.length) return;
+      var ov = trips.filter(function (t) { var e = t.endMin != null ? t.endMin : t.startMin + 90; return t.date === a.date && t.startMin < aEnd && e > a.startMin; });
+      if (!ov.length) return;
+      var free = 2 - ov.length;
+      ov.forEach(function (t) {
+        var tk = bkey(t.boat), same = tb.filter(function (b) { return bkey(b.boat) === tk; })[0];
+        var why = '';
+        if (tk && same) why = BOAT[tk].label + ' staat in deze shift nog op Tickets';
+        else if (tb.length > free) why = free <= 0 ? 'geen boot vrij voor losse tickets' : 'beide boten staan op Tickets, er is er maar één vrij';
+        if (why) out.push({ type: 'alf', date: a.date, alf: a, trip: t, why: why });
+      });
+    });
+    P.conflicts.forEach(function (c) { if (c.date >= T) out.push({ type: 'priv', date: c.date, c: c }); });
+    out.sort(function (x, y) { return x.date < y.date ? -1 : x.date > y.date ? 1 : 0; });
+    return { list: out, at: Date.now() };
+  }
+  function loadSeason() {
+    if (SEASON_LOADING || !ABC.authValid()) return;
+    var T = todayIso();
+    if (T > SEASON_END) { SEASON = { list: [] }; return; }
+    SEASON_LOADING = true;
+    ABC.run().withSuccessHandler(function (d) {
+      SEASON_LOADING = false;
+      var was = SEASON ? SEASON.list.length : -1;
+      SEASON = seasonCheck(d);
+      try { localStorage.setItem('abc_season', JSON.stringify({ d: d })); } catch (e) { /* */ }
+      var nAlf = SEASON.list.filter(function (c) { return c.type === 'alf'; }).length;
+      if (nAlf && was !== SEASON.list.length) toast('Let op: ' + plural(nAlf, 'overlap', 'overlappen') + ' tussen privévaart en losse tickets');
+      render();
+    }).withFailureHandler(function () { SEASON_LOADING = false; }).getData(T, SEASON_END);
+  }
+  function seasonText(c) {
+    var when = NL_DOW_S[dow(c.date)] + ' ' + dn(c.date) + ' ' + NL_MON_S[mi(c.date)];
+    if (c.type === 'alf') return when + ': privé ' + first(c.trip.name) + ' ' + c.trip.timeLabel + (c.trip.boat ? ' (' + BOAT[bkey(c.trip.boat)].label + ')' : ' (boot nog niet gekozen)') + ' overlapt losse tickets ' + c.alf.start + ' — ' + c.why + '.';
+    return when + ': ' + confText(c.c, false).replace(/ op .*? \(/, ' (') + '.';
+  }
+  function seasonBar() {
+    if (!SEASON || !SEASON.list.length) return '';
+    var nA = SEASON.list.filter(function (c) { return c.type === 'alf'; }).length, nP = SEASON.list.length - nA;
+    var head = [];
+    if (nA) head.push(plural(nA, 'overlap', 'overlappen') + ' privévaart ↔ losse tickets');
+    if (nP) head.push(plural(nP, 'dubbele privéboeking', 'dubbele privéboekingen'));
+    return '<div class="ovl' + (nA ? '' : ' soft') + '"><button class="ovl-h" data-act="season">⚠ ' + esc(head.join(' · ')) + '<span>' + (SEASON_OPEN ? 'Verberg' : 'Bekijk') + '</span></button>' +
+      (SEASON_OPEN ? '<div class="ovl-l">' + SEASON.list.map(function (c) {
+        return '<button data-act="seasongo:' + esc(c.type === 'alf' ? c.alf.id : c.c.a.id) + '|' + esc(c.date) + '"><b>' + (c.type === 'alf' ? 'Losse tickets' : 'Privé') + '</b>' + esc(seasonText(c)) + '</button>';
+      }).join('') + (nA ? '<div class="ovl-tip">Tip: open de shift en zet de boot onder Boten &amp; crew op <b>Privé</b>. Dan gaat de capaciteit omlaag en sluit de verkoop als hij vol is.</div>' : '') + '</div>' : '') +
+      '</div>';
+  }
   function alertBar(confs, noSk) {
     if (!confs.length && !noSk && !S.problems) return '';
     var parts = [];
@@ -1393,7 +1463,7 @@ body{padding-top:env(safe-area-inset-top)}
     var title = S.view === 'day' ? longDate(a) : cap(NL_MON[mi(a)]) + ' ' + yr(a);
     var body = !DATA ? '<div class="boot" style="min-height:300px"><div class="spin"></div>Planning laden…</div>' : (S.view === 'day' ? dayList(a) : calHtml());
     var rp = DATA ? rightPanel(mT, 'agenda') : null;
-    return '<div class="wrap"><div class="inner">' + hdrAgenda() + errBar() + (DATA ? alertBar(confs, noSk) : '') +
+    return '<div class="wrap"><div class="inner">' + hdrAgenda() + errBar() + seasonBar() + (DATA ? alertBar(confs, noSk) : '') +
       '<div class="cols">' + aside + '<main class="main">' + toolbar(title) + body + '</main>' +
       (rp ? '<section class="det">' + rp + '</section>' : '') + '</div></div></div>' +
       (S.dayPop && DATA ? dayPopHtml(S.dayPop) : '');
@@ -1570,7 +1640,7 @@ body{padding-top:env(safe-area-inset-top)}
     } else if (S.sel && findItem(S.sel)) {
       overlay = '<div class="ov" data-act="close"><div class="sheet" data-act="noop"><div class="grab"></div>' + sheetDetail(findItem(S.sel)) + '</div></div>';
     }
-    return '<div class="mwrap">' + top + errBar() + chips + body + '</div>' +
+    return '<div class="mwrap">' + top + errBar() + seasonBar() + chips + body + '</div>' +
       '<button class="fab" data-act="new" aria-label="Nieuwe tocht toevoegen">+ Nieuwe tocht</button>' + overlay;
   }
   function sheetDetail(t) {
@@ -1586,7 +1656,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '22';
+  var APP_VERSION = '23';
   var SWIPE_IN = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -1664,6 +1734,12 @@ body{padding-top:env(safe-area-inset-top)}
         if (tl && fb && tl.scrollWidth > tl.clientWidth) { var lft = Infinity; tl.querySelectorAll('.tl-blk').forEach(function (b) { lft = Math.min(lft, b.offsetLeft); }); tl.scrollLeft = Math.max(0, lft + 92 - 40); }
         return;
       case 'closepop': S.dayPop = null; render(); return;
+      case 'season': SEASON_OPEN = !SEASON_OPEN; render(); return;
+      case 'seasongo':
+        var si = v.lastIndexOf('|'), sid = v.slice(0, si), sd = v.slice(si + 1);
+        SEASON_OPEN = false; S.dayPop = null; S.panel = null; S.editing = null; S.confirmDel = null;
+        if (S.mobile) S.mMonth = false; else S.view = 'day';
+        S.sel = sid; setAnchor(sd); return;
       case 'popsel':
         var pi = v.indexOf('|');
         loadJsPDF().catch(function () {}); S.dayPop = null; S.confirmDel = null; S.sel = v.slice(pi + 1); S.panel = null; S.editing = null; render(); return;
