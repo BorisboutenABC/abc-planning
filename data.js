@@ -107,7 +107,9 @@
         saveTrip: function (f) { call('saveTrip', [f]).then(ok, fail); },
         deleteTrip: function (i, k) { call('deleteTrip', [i, k]).then(ok, fail); },
         setPaid: function (i, k, v) { call('setPaid', [i, k, v]).then(ok, fail); },
-        getTickets: function () { call('getTickets', []).then(ok, fail); }
+        getTickets: function () { call('getTickets', []).then(ok, fail); },
+        setAlfCrew: function (d, s, b) { call('setAlfCrew', [d, s, b]).then(ok, fail); },
+        setTicketBoat: function (r, n, b) { call('setTicketBoat', [r, n, b]).then(ok, fail); }
       };
       return c;
     }

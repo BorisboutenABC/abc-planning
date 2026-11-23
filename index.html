@@ -227,6 +227,14 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .tp{display:flex;align-items:center;gap:4px}
 .fg .tp select{background-image:none;padding:10px 4px;text-align:center;text-align-last:center;font-size:16px;font-weight:600}
 .fg .tp b{font-weight:700;color:var(--mut)}
+.acrew{display:flex;flex-direction:column;gap:8px}
+.acb{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.acb-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.fg.acb-g,.sheet .fg.acb-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fg.acb-g label,.sheet .fg.acb-g label{grid-column:auto}
+.fg.acb-g select{padding:8px 22px 8px 8px;font-size:13px;background-position:calc(100% - 12px) 50%,calc(100% - 7px) 50%}
+.tk-boat{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tk-boat select{border:1px solid var(--bd);border-radius:10px;padding:6px 8px;background:var(--card);font-size:13px}
 .tk{display:flex;flex-direction:column;gap:6px}
 .tk-h{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:700;color:#2E3A86;margin-top:2px}
 .tk-h span:last-child{font-weight:500;color:var(--mut)}
@@ -518,7 +526,7 @@ body{padding-top:env(safe-area-inset-top)}
       var c = (t.notes || '').match(/(\d+)\s*(?:euro|eur|€)?\s*cash|cash\s*(?:nog\s*)?(?:€\s*)?(\d+)/i);
       t.cash = c ? (c[1] || c[2]) : '';
     });
-    var alfs = (d.alf || []).filter(function (a) { return a.booked > 0; }).map(function (a) {
+    var alfs = (d.alf || []).filter(function (a) { return a.booked > 0 || (a.boats || []).some(function (b) { return !/vaart niet/i.test(b.status || a.status || ''); }); }).map(function (a) {
       var o = {}; for (var k in a) o[k] = a[k]; o.kind = 'alf'; o.name = 'Light Festival';
       var tm = /(\d{1,2})[:.](\d{2})(?:\s*[-–]\s*(\d{1,2})[:.](\d{2}))?/.exec(o.start || o.timeLabel || o.shift || '');
       if (tm) {
@@ -1190,7 +1198,6 @@ body{padding-top:env(safe-area-inset-top)}
       ['Gasten', esc(r.pax || '—')]
     ];
     if (r.opmerkingen) rows.push(['Drank / opm.', esc(r.opmerkingen)]);
-    if (r.boot) rows.push(['Boot', esc(r.boot)]);
     if (r.opstap) rows.push(['Opstap', esc(r.opstap)]);
     if (r.email) rows.push(['E-mail', '<a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>']);
     if (en) rows.push(['Taal', 'Engels']);
@@ -1198,6 +1205,7 @@ body{padding-top:env(safe-area-inset-top)}
     var aan = /^(true|waar|ja|x|✓)$/i.test(String(r.check || '').trim());
     return '<details class="tkr" data-tk="' + esc(key) + '"' + (TK_OPEN[key] ? ' open' : '') + '><summary><span class="n">' + (aan ? '<span style="color:#2E7D4F" title="Aan boord">✓ </span>' : '') + esc(r.naam) + '</span><span class="p">' + esc(r.pax || '?') + ' pax</span>' + platChip(r.platform) + '<span class="ar">▶</span></summary>' +
       '<div class="tk-b">' + rows.map(function (x) { return '<div><span>' + x[0] + '</span><span>' + x[1] + '</span></div>'; }).join('') +
+      '<div class="tk-boat"><span style="color:var(--mut)">Boot</span><select data-tkboat="' + esc(r.row) + '" data-naam="' + esc(r.naam) + '">' + opt('', 'Nog niet ingedeeld', r.boot || '') + opt('ZAZA', 'ZAZA', r.boot === 'ZAZA' ? 'ZAZA' : '') + opt('Mosi Jo', 'Mosi Jo', /mosi/i.test(r.boot || '') ? 'Mosi Jo' : '') + '</select></div>' +
       (tel ? '<div class="tk-act"><a href="tel:+' + esc(tel) + '">Bellen</a><a class="wa" target="_blank" rel="noopener" href="https://wa.me/' + esc(tel) + '">WhatsApp</a></div>' : '') +
       '</div></details>';
   }
@@ -1213,16 +1221,33 @@ body{padding-top:env(safe-area-inset-top)}
     return '<div class="tk"><div class="tk-h"><span>Gasten</span><span>' + plural(list.length, 'boeking', 'boekingen') + ' · ' + pax + ' pax</span></div>' +
       list.map(ticketRow).join('') + '</div>';
   }
+  var ALF_ST = ['Tickets', 'Privé', 'Vaart niet'], ALF_SAVING = false, ALF_MSG = null;
+  function crewOpts(cur) {
+    var names = (DATA ? DATA.raw.schippers : []).map(function (s) { return s.naam; });
+    if (cur && names.map(function (x) { return x.toLowerCase(); }).indexOf(cur.toLowerCase()) < 0) names.push(cur);
+    return opt('', '—', cur || '') + names.map(function (n) { return opt(n, n, (cur || '').toLowerCase() === n.toLowerCase() ? n : ''); }).join('');
+  }
+  function alfCrewForm(a, boats) {
+    if (!boats.length || a.id.indexOf('alf:') !== 0) return '';
+    var msg = ALF_MSG && ALF_MSG.id === a.id ? '<div class="' + (ALF_MSG.err ? 'ferr' : 'tk-msg') + '">' + esc(ALF_MSG.text) + '</div>' : '';
+    return '<form id="alfForm" class="acrew" data-alf="' + esc(a.id) + '" autocomplete="off"><div class="tk-h"><span>Boten &amp; crew</span><span></span></div>' +
+      boats.map(function (b, i) {
+        var st = b.status || a.status || 'Tickets';
+        return '<div class="acb"><div class="acb-h"><span class="b">' + esc(b.boat) + '</span>' + (b.pax ? '<span class="m12">' + b.pax + ' pax ingedeeld</span>' : '') + '</div>' +
+          '<input type="hidden" name="boat' + i + '" value="' + esc(b.boat) + '">' +
+          '<div class="acb-g fg"><label><span>Status</span><select name="status' + i + '">' + ALF_ST.map(function (x) { return opt(x, x, st); }).join('') + '</select></label>' +
+          '<label><span>Schipper</span><select name="schipper' + i + '">' + crewOpts(b.schipper) + '</select></label>' +
+          '<label><span>Host</span><select name="host' + i + '">' + crewOpts(b.host) + '</select></label></div></div>';
+      }).join('') + msg +
+      '<button type="submit" class="save"' + (ALF_SAVING ? ' disabled' : '') + '>' + (ALF_SAVING ? 'Opslaan…' : 'Indeling opslaan') + '</button></form>';
+  }
   function alfDetail(a) {
     var boats = (a.boats || []).filter(function (b) { return b.boat; });
     return '<div class="dpad" style="display:flex;flex-direction:column;gap:12px">' +
       '<div class="frm-h" style="align-items:flex-start"><div><div class="m12">' + esc(longDate(a.date)) + ' · ' + esc(a.timeLabel || a.shift || '') + '</div><div class="sg" style="font-weight:700;font-size:24px;margin-top:4px">Light Festival</div></div>' + xbtn() + '</div>' +
       (a.cap ? '<div class="alfc" style="cursor:default"><div class="alfc-t"><span>Losse tickets</span><span>' + a.booked + '/' + a.cap + '</span></div>' + bar(a.booked, a.cap) + '</div>' : '<div class="nbox">' + esc(a.note || '') + '</div>') +
-      (boats.length ? '<div class="rows">' + boats.map(function (b) {
-        return '<div><span>' + esc(b.boat) + '</span><span>' + esc(b.schipper || 'geen schipper') + (b.host ? ' · host ' + esc(b.host) : '') + (b.pax ? ' · ' + b.pax + ' pax' : '') + '</span></div>';
-      }).join('') + '</div>' : '') +
+      alfCrewForm(a, boats) +
       ticketList(a) +
-      (a.status ? '<div class="m12">Status: ' + esc(a.status) + '</div>' : '') +
       '<a class="abtn ghost" href="' + esc(sheetLink(a)) + '" target="_blank" rel="noopener">Open in sheet</a></div>';
   }
 
@@ -1552,7 +1577,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '18';
+  var APP_VERSION = '19';
   var SWIPE_IN = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -1771,6 +1796,17 @@ body{padding-top:env(safe-area-inset-top)}
     if (f && f.id === 'tripForm') checkFormConflict(f);
   });
   document.addEventListener('change', function (e) {
+    var tb = e.target.getAttribute && e.target.getAttribute('data-tkboat');
+    if (tb) {
+      var sel = e.target, naam = sel.getAttribute('data-naam'), boat = sel.value;
+      sel.disabled = true;
+      timed(rpc('setTicketBoat', [+tb, naam, boat]), 45000).then(function () {
+        (TICKETS || []).forEach(function (r) { if (String(r.row) === String(tb)) r.boot = boat; });
+        toast(naam + (boat ? ' ingedeeld op ' + boat : ': boot leeggemaakt'));
+        load(true);
+      }, function (err) { sel.disabled = false; toast('Niet opgeslagen: ' + ((err && err.message) || err)); });
+      return;
+    }
     if (e.target.getAttribute && e.target.getAttribute('data-tp')) syncTime(e.target);
     var ln = e.target.getAttribute && e.target.getAttribute('data-loc');
     if (ln && e.target.form) {
@@ -1781,6 +1817,22 @@ body{padding-top:env(safe-area-inset-top)}
     if (f && f.id === 'tripForm') checkFormConflict(f);
   });
   document.addEventListener('submit', function (e) {
+    if (e.target.id === 'alfForm') {
+      e.preventDefault();
+      if (ALF_SAVING) return;
+      var fm = e.target, el = fm.elements, id = fm.getAttribute('data-alf'), a = findItem(id);
+      if (!a) return;
+      var boats = [];
+      for (var i = 0; el['boat' + i]; i++) boats.push({ boat: el['boat' + i].value, status: el['status' + i].value, schipper: el['schipper' + i].value, host: el['host' + i].value });
+      ALF_SAVING = true; ALF_MSG = null; render();
+      timed(rpc('setAlfCrew', [a.date, a.shift, boats]), 45000).then(function () {
+        ALF_SAVING = false; ALF_MSG = { id: id, text: 'Opgeslagen in ALF 2027.' };
+        load(true);
+      }, function (err) {
+        ALF_SAVING = false; ALF_MSG = { id: id, err: true, text: (err && err.message) || String(err) }; render();
+      });
+      return;
+    }
     if (e.target.id !== 'tripForm') return;
     e.preventDefault();
     if (SAVING) return;

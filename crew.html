@@ -40,6 +40,10 @@ main{padding:16px 20px calc(env(safe-area-inset-bottom) + 40px);max-width:980px;
 .search{flex:1;height:52px;border-radius:16px;border:1px solid var(--line);background:var(--card);padding:0 16px;font-size:18px;-webkit-user-select:text;user-select:text}
 .tgl{height:52px;padding:0 14px;border-radius:16px;background:var(--card);border:1px solid var(--line);font-weight:600;font-size:14px}
 .tgl.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.crewl{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.crewl>div{flex:1;min-width:220px;background:#E4F0F0;border-radius:14px;padding:10px 14px;font-size:14px}
+.crewl>div.off{background:#EFE8DD;color:var(--mut)}
+.crewl b{display:block;font-size:16px;margin-bottom:2px}
 .sum{display:flex;gap:10px;margin-bottom:12px}
 .sum>div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
 .sum b{font-size:24px;display:block}
@@ -241,6 +245,11 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
         list.forEach(function (g) { var p = parseInt(g.pax, 10) || 0; pax += p; if (isChecked(g)) { inP += p; nB++; } });
         var q = S.q.trim().toLowerCase();
         var shown = list.filter(function (g) { return (!S.hide || !isChecked(g)) && (!q || (g.naam + ' ' + g.telefoon).toLowerCase().indexOf(q) >= 0); });
+        var sc = ((d.shifts || []).filter(function (x) { return x.shift === cur.key; })[0] || {}).boats || [];
+        if (sc.length) body += '<div class="crewl">' + sc.map(function (b) {
+          var off = /vaart niet|priv/i.test(b.status || '');
+          return '<div' + (off ? ' class="off"' : '') + '><b>' + esc(b.boat) + '</b>' + (off ? '<span>' + esc(b.status) + '</span>' : '<span>Schipper ' + esc(b.schipper || '—') + ' · host ' + esc(b.host || '—') + (b.pax ? ' · ' + b.pax + ' pax' : '') + '</span>') + '</div>';
+        }).join('') + '</div>';
         body += '<div class="sum"><div><b>' + inP + ' / ' + pax + '</b><span>gasten aan boord</span><div class="bar"><i style="width:' + (pax ? Math.round(inP / pax * 100) : 0) + '%"></i></div></div>' +
           '<div><b>' + nB + ' / ' + list.length + '</b><span>boekingen binnen</span></div></div>' +
           '<div class="tools"><input class="search" id="q" type="search" placeholder="Zoek naam…" value="' + esc(S.q) + '" autocomplete="off">' +
