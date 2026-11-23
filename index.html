@@ -519,7 +519,15 @@ body{padding-top:env(safe-area-inset-top)}
       t.cash = c ? (c[1] || c[2]) : '';
     });
     var alfs = (d.alf || []).filter(function (a) { return a.booked > 0; }).map(function (a) {
-      var o = {}; for (var k in a) o[k] = a[k]; o.kind = 'alf'; o.name = 'Light Festival'; return o;
+      var o = {}; for (var k in a) o[k] = a[k]; o.kind = 'alf'; o.name = 'Light Festival';
+      var tm = /(\d{1,2})[:.](\d{2})(?:\s*[-–]\s*(\d{1,2})[:.](\d{2}))?/.exec(o.start || o.timeLabel || o.shift || '');
+      if (tm) {
+        if (o.startMin == null) o.startMin = +tm[1] * 60 + +tm[2];
+        if (!o.start) o.start = ('0' + tm[1]).slice(-2) + ':' + tm[2];
+        if (o.endMin == null && tm[3]) o.endMin = +tm[3] * 60 + +tm[4];
+        if (!o.timeLabel) o.timeLabel = o.start + (tm[3] ? ' – ' + ('0' + tm[3]).slice(-2) + ':' + tm[4] : '');
+      }
+      return o;
     });
     (d.trips || []).filter(function (t) { return t.kind === 'alfnote'; }).forEach(function (n) {
       if (alfs.some(function (a) { return a.date === n.date && a.start === n.start; })) return;
@@ -1308,6 +1316,9 @@ body{padding-top:env(safe-area-inset-top)}
       '<div class="tc-top"><span class="tc-time">' + esc(t.timeLabel) + '</span>' + chip(b.short, b.chip) + '</div>' +
       '<div class="tc-name">' + esc(t.name) + langTag(t) + '</div><div class="tc-sub">' + (t.pax || '?') + ' pers · ' + esc(drankLabel(t)) + ' · ' + esc(t.opstap || '—') + '</div>' + (wxTrip(t) ? '<div class="wxline">' + wxTripHtml(t) + '</div>' : '') + flagsHtml(t) + '</button>';
   }
+  function walfCard(a) {
+    return '<button class="walf' + (a.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(a.id) + '"><div class="b">' + esc(a.timeLabel || a.start || '') + ' · Light Festival</div><div>' + (a.cap ? a.booked + '/' + a.cap + ' tickets' : esc(a.note || '')) + '</div></button>';
+  }
   function alfCard(a) {
     return '<button class="alfc' + (a.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(a.id) + '"><div class="alfc-t"><span>Light Festival ' + esc(a.start || '') + '</span><span>' + (a.cap ? a.booked + '/' + a.cap : esc(a.note || '')) + '</span></div>' + (a.cap ? bar(a.booked, a.cap) : '') + '</button>';
   }
@@ -1430,16 +1441,15 @@ body{padding-top:env(safe-area-inset-top)}
       '<div class="kpi"><div class="l">Omzet week</div><div class="v" style="color:var(--mut2)">—</div><div class="s">nog niet gekoppeld</div></div></section>';
     var cols = days.map(function (d) {
       var items = DATA ? dayItems(d) : [];
-      var trips = items.filter(function (x) { return x.kind !== 'alf'; }), alfs = items.filter(function (x) { return x.kind === 'alf'; });
       return '<div class="wday' + (dow(d) >= 5 ? ' we' : '') + '"><button class="wday-h' + (d === T ? ' today' : '') + '" data-act="day:' + d + '"><span class="d">' + cap(NL_DOW[dow(d)]) + '</span><span class="n">' + dn(d) + ' ' + NL_MON_S[mi(d)] + '</span></button>' +
         (wxDay(d) ? '<div class="wday-wx">' + wxDayHtml(d) + '</div>' : '') +
         (!items.length ? '<button class="noday" style="border:0;background:transparent;text-align:left;cursor:pointer" data-act="newon:' + d + '">Geen tochten · + toevoegen</button>' : '') +
-        trips.map(function (t) {
+        items.map(function (t) {
+          if (t.kind === 'alf') return walfCard(t);
           var b = BOAT[bk(t)];
           return '<button class="wcard' + (t.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(t.id) + '" aria-label="Open tocht ' + esc(t.name) + '"><div class="wc-top"><span class="wc-time">' + esc(t.timeLabel) + '</span>' + chip(b.short, b.chip) + '</div>' +
             '<div class="wc-name">' + esc(t.name) + langTag(t) + '</div><div class="wc-sub">' + (t.pax || '?') + ' pers · ' + esc(drankLabel(t)) + '</div>' + (wxTrip(t) ? '<div class="wxline">' + wxTripHtml(t) + '</div>' : '') + flagsHtml(t) + '</button>';
         }).join('') +
-        alfs.map(function (a) { return '<button class="walf' + (a.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(a.id) + '"><div class="b">Light Festival ' + esc(a.start || '') + '</div><div>' + (a.cap ? a.booked + '/' + a.cap + ' tickets' : esc(a.note || '')) + '</div></button>'; }).join('') +
         '</div>';
     }).join('');
     var rp = DATA ? rightPanel(wT, 'week') : null;
@@ -1516,7 +1526,7 @@ body{padding-top:env(safe-area-inset-top)}
         '<div class="mday-h"><h2 class="sg">' + esc(dayMonth(cur)) + '</h2><span class="m12">' + plural(trips.length, 'tocht', 'tochten') + ' · ' + pax + ' gasten</span></div>' +
         (wxDay(cur) ? '<div style="margin-top:-6px">' + wxDayHtml(cur, 15) + (wxDay(cur).tmin != null ? '<span class="wx"> · min ' + Math.round(wxDay(cur).tmin) + '°' + (wxDay(cur).gust >= 50 ? ' · windstoten ' + Math.round(wxDay(cur).gust) + ' km/u' : '') + '</span>' : '') + '</div>' : '') +
         (!items.length ? '<div class="empty" style="background:var(--card)">Geen tochten op deze dag.<br><button class="save" data-act="newon:' + cur + '">+ Tocht toevoegen</button></div>' : '') +
-        trips.map(tripCard).join('') + alfs.map(alfCard).join('') +
+        items.map(function (x) { return x.kind === 'alf' ? alfCard(x) : tripCard(x); }).join('') +
         '<div class="mcard"><div class="h sg">Aandachtspunten deze week</div><div style="display:flex;flex-direction:column;gap:8px">' + todoHtml(todoList(wT, confs), 5) + '</div></div>' +
         '<button class="linkbtn" data-act="logout">' + (ABC.email() ? 'Ingelogd als ' + esc(ABC.email()) + ' · uitloggen' : 'Uitloggen') + ' · versie ' + APP_VERSION + '</button>';
     }
@@ -1542,7 +1552,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '17';
+  var APP_VERSION = '18';
   var SWIPE_IN = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
