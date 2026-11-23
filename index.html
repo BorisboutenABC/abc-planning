@@ -1210,7 +1210,6 @@ body{padding-top:env(safe-area-inset-top)}
     var aan = /^(true|waar|ja|x|✓)$/i.test(String(r.check || '').trim());
     return '<details class="tkr" data-tk="' + esc(key) + '"' + (TK_OPEN[key] ? ' open' : '') + '><summary><span class="n">' + (aan ? '<span style="color:#2E7D4F" title="Aan boord">✓ </span>' : '') + esc(r.naam) + '</span><span class="p">' + esc(r.pax || '?') + ' pax</span>' + platChip(r.platform) + '<span class="ar">▶</span></summary>' +
       '<div class="tk-b">' + rows.map(function (x) { return '<div><span>' + x[0] + '</span><span>' + x[1] + '</span></div>'; }).join('') +
-      '<button class="abtn ghost tk-arc' + (S.confirmTk === String(r.row) ? ' on' : '') + '" data-act="tkarc:' + esc(r.row) + '">' + (S.confirmTk === String(r.row) ? (TK_ARC ? 'Verplaatsen…' : 'Tik nogmaals: naar tabblad Uitbesteed tickets') : 'Uitbesteed → uit lijst halen') + '</button>' +
       '<div class="tk-boat"><span style="color:var(--mut)">Boot</span><select data-tkboat="' + esc(r.row) + '" data-naam="' + esc(r.naam) + '">' + opt('', 'Nog niet ingedeeld', r.boot || '') + opt('ZAZA', 'ZAZA', r.boot === 'ZAZA' ? 'ZAZA' : '') + opt('Mosi Jo', 'Mosi Jo', /mosi/i.test(r.boot || '') ? 'Mosi Jo' : '') + '</select></div>' +
       (tel ? '<div class="tk-act"><a href="tel:+' + esc(tel) + '">Bellen</a><a class="wa" target="_blank" rel="noopener" href="https://wa.me/' + esc(tel) + '">WhatsApp</a></div>' : '') +
       '</div></details>';
@@ -1245,7 +1244,11 @@ body{padding-top:env(safe-area-inset-top)}
           '<label><span>Schipper</span><select name="schipper' + i + '">' + crewOpts(b.schipper) + '</select></label>' +
           '<label><span>Host</span><select name="host' + i + '">' + crewOpts(b.host) + '</select></label></div></div>';
       }).join('') + msg +
-      '<button type="submit" class="save"' + (ALF_SAVING ? ' disabled' : '') + '>' + (ALF_SAVING ? 'Opslaan…' : 'Indeling opslaan') + '</button></form>';
+      '<button type="submit" class="save"' + (ALF_SAVING ? ' disabled' : '') + '>' + (ALF_SAVING ? 'Opslaan…' : 'Indeling opslaan') + '</button>' +
+      (a.booked > 0
+        ? '<div class="tk-msg">Er ' + (a.booked === 1 ? 'is nog 1 gast' : 'zijn nog ' + a.booked + ' gasten') + ' geboekt; daarom kan deze shift niet weg.</div>'
+        : '<button type="button" class="abtn del' + (S.confirmAlfOff === a.id ? ' on' : '') + '" data-act="alfoff:' + esc(a.id) + '">' + (S.confirmAlfOff === a.id ? (ALF_SAVING ? 'Weghalen…' : 'Zeker weten? Tik nogmaals: beide boten op "Vaart niet"') : 'Shift weghalen uit planning') + '</button>') +
+      '</form>';
   }
   function alfDetail(a) {
     var boats = (a.boats || []).filter(function (b) { return b.boat; });
@@ -1583,7 +1586,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '21';
+  var APP_VERSION = '22';
   var SWIPE_IN = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -1710,6 +1713,17 @@ body{padding-top:env(safe-area-inset-top)}
         return;
       case 'logout':
         ABC.signOut(); DATA = null; CACHE = {}; ERR = 'AUTH'; S.sel = null; S.panel = null; render(); return;
+      case 'alfoff':
+        if (ALF_SAVING) return;
+        var ao = findItem(v);
+        if (!ao || ao.kind !== 'alf' || ao.booked > 0) return;
+        if (S.confirmAlfOff !== v) { S.confirmAlfOff = v; render(); return; }
+        ALF_SAVING = true; render();
+        timed(rpc('setAlfCrew', [ao.date, ao.shift, (ao.boats || []).map(function (b) { return { boat: b.boat, status: 'Vaart niet', schipper: b.schipper || '', host: b.host || '' }; })]), 45000).then(function () {
+          ALF_SAVING = false; S.confirmAlfOff = null; S.sel = null; CACHE = {};
+          toast('Shift ' + (ao.start || '') + ' weggehaald (Vaart niet)'); load(true);
+        }, function (err) { ALF_SAVING = false; S.confirmAlfOff = null; toast((err && err.message) || 'Weghalen is niet gelukt'); render(); });
+        return;
       case 'tkarc':
         if (TK_ARC) return;
         var tr = (TICKETS || []).filter(function (x) { return String(x.row) === v; })[0];
