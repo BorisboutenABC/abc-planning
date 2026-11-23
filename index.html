@@ -235,6 +235,7 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .fg.acb-g select{padding:8px 22px 8px 8px;font-size:13px;background-position:calc(100% - 12px) 50%,calc(100% - 7px) 50%}
 .tk-boat{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .tk-boat select{border:1px solid var(--bd);border-radius:10px;padding:6px 8px;background:var(--card);font-size:13px}
+.tk-b .tk-arc{margin-top:4px;font-size:13px;padding:8px}
 .tk{display:flex;flex-direction:column;gap:6px}
 .tk-h{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:700;color:#2E3A86;margin-top:2px}
 .tk-h span:last-child{font-weight:500;color:var(--mut)}
@@ -1152,7 +1153,7 @@ body{padding-top:env(safe-area-inset-top)}
       }).join('') + '</div></div>';
   }
   /* ---------- Light Festival: namenlijst losse tickets (tab "ALF 2027 tickets") ---------- */
-  var TICKETS = null, TK_LOADING = false, TK_ERR = null, TK_FRESH = false, TK_OPEN = {};
+  var TK_ARC = false, TICKETS = null, TK_LOADING = false, TK_ERR = null, TK_FRESH = false, TK_OPEN = {};
   try { var tkSaved = JSON.parse(localStorage.getItem('abc_tickets') || 'null'); if (tkSaved && tkSaved.length) TICKETS = tkSaved.map(prepTicket); } catch (e) { /* */ }
   function prepTicket(r) {
     var o = {}; for (var k in r) o[k] = r[k];
@@ -1209,6 +1210,7 @@ body{padding-top:env(safe-area-inset-top)}
     var aan = /^(true|waar|ja|x|✓)$/i.test(String(r.check || '').trim());
     return '<details class="tkr" data-tk="' + esc(key) + '"' + (TK_OPEN[key] ? ' open' : '') + '><summary><span class="n">' + (aan ? '<span style="color:#2E7D4F" title="Aan boord">✓ </span>' : '') + esc(r.naam) + '</span><span class="p">' + esc(r.pax || '?') + ' pax</span>' + platChip(r.platform) + '<span class="ar">▶</span></summary>' +
       '<div class="tk-b">' + rows.map(function (x) { return '<div><span>' + x[0] + '</span><span>' + x[1] + '</span></div>'; }).join('') +
+      '<button class="abtn ghost tk-arc' + (S.confirmTk === String(r.row) ? ' on' : '') + '" data-act="tkarc:' + esc(r.row) + '">' + (S.confirmTk === String(r.row) ? (TK_ARC ? 'Verplaatsen…' : 'Tik nogmaals: naar tabblad Uitbesteed tickets') : 'Uitbesteed → uit lijst halen') + '</button>' +
       '<div class="tk-boat"><span style="color:var(--mut)">Boot</span><select data-tkboat="' + esc(r.row) + '" data-naam="' + esc(r.naam) + '">' + opt('', 'Nog niet ingedeeld', r.boot || '') + opt('ZAZA', 'ZAZA', r.boot === 'ZAZA' ? 'ZAZA' : '') + opt('Mosi Jo', 'Mosi Jo', /mosi/i.test(r.boot || '') ? 'Mosi Jo' : '') + '</select></div>' +
       (tel ? '<div class="tk-act"><a href="tel:+' + esc(tel) + '">Bellen</a><a class="wa" target="_blank" rel="noopener" href="https://wa.me/' + esc(tel) + '">WhatsApp</a></div>' : '') +
       '</div></details>';
@@ -1581,7 +1583,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '20';
+  var APP_VERSION = '21';
   var SWIPE_IN = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -1708,6 +1710,19 @@ body{padding-top:env(safe-area-inset-top)}
         return;
       case 'logout':
         ABC.signOut(); DATA = null; CACHE = {}; ERR = 'AUTH'; S.sel = null; S.panel = null; render(); return;
+      case 'tkarc':
+        if (TK_ARC) return;
+        var tr = (TICKETS || []).filter(function (x) { return String(x.row) === v; })[0];
+        if (!tr) return;
+        if (S.confirmTk !== v) { S.confirmTk = v; render(); return; }
+        TK_ARC = true; render();
+        timed(rpc('archiveTicket', [+v, tr.naam, 'Uitbesteed']), 60000).then(function () {
+          TK_ARC = false; S.confirmTk = null; TK_OPEN = {};
+          TICKETS = TICKETS.filter(function (x) { return x !== tr; });
+          toast(tr.naam + ' verplaatst naar Uitbesteed tickets');
+          TK_FRESH = false; CACHE = {}; load(true);
+        }, function (err) { TK_ARC = false; S.confirmTk = null; toast((err && err.message) || 'Verplaatsen is niet gelukt'); TK_FRESH = false; render(); });
+        return;
       case 'arc':
         if (DELETING) return;
         var ax = findItem(v);
