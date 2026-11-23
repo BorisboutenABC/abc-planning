@@ -109,7 +109,8 @@
         setPaid: function (i, k, v) { call('setPaid', [i, k, v]).then(ok, fail); },
         getTickets: function () { call('getTickets', []).then(ok, fail); },
         setAlfCrew: function (d, s, b) { call('setAlfCrew', [d, s, b]).then(ok, fail); },
-        setTicketBoat: function (r, n, b) { call('setTicketBoat', [r, n, b]).then(ok, fail); }
+        setTicketBoat: function (r, n, b) { call('setTicketBoat', [r, n, b]).then(ok, fail); },
+        archiveTrip: function (i, k, r) { call('archiveTrip', [i, k, r]).then(ok, fail); }
       };
       return c;
     }

@@ -691,7 +691,11 @@ body{padding-top:env(safe-area-inset-top)}
       '<a class="abtn s" href="' + esc(waSchipper(t)) + '" target="_blank" rel="noopener">App schipper</a></div>' + cardButtons(t);
   }
   function secButtons(t) {
-    return '<div class="acts"><button class="abtn ghost" data-act="edit">Bewerken</button><a class="abtn ghost" href="' + esc(sheetLink(t)) + '" target="_blank" rel="noopener">Open in sheet</a></div>' + delBtn(t);
+    return '<div class="acts"><button class="abtn ghost" data-act="edit">Bewerken</button><a class="abtn ghost" href="' + esc(sheetLink(t)) + '" target="_blank" rel="noopener">Open in sheet</a></div>' + arcBtn(t) + delBtn(t);
+  }
+  function arcBtn(t) {
+    var on = S.confirmArc === t.id;
+    return '<button class="abtn ghost' + (on ? ' on' : '') + '" data-act="arc:' + esc(t.id) + '">' + (on ? (DELETING ? 'Verplaatsen…' : 'Tik nogmaals: naar tabblad Uitbesteed') : 'Uitbesteed → uit planning halen') + '</button>';
   }
   function delBtn(t) {
     var on = S.confirmDel === t.id;
@@ -1573,11 +1577,11 @@ body{padding-top:env(safe-area-inset-top)}
       '<div class="nbox">' + esc(t.notes || '—') + '</div>' +
       conflictBox(t) + payBox(t) +
       waButtons(t).replace(/class="abtn/g, 'style="padding:14px;font-size:14px" class="abtn') +
-      '<div class="acts"><button class="abtn ghost" data-act="edit">' + (t.schipper ? 'Bewerken' : 'Schipper indelen') + '</button><a class="abtn ghost" href="' + esc(sheetLink(t)) + '" target="_blank" rel="noopener">Open in sheet</a></div>' + delBtn(t);
+      '<div class="acts"><button class="abtn ghost" data-act="edit">' + (t.schipper ? 'Bewerken' : 'Schipper indelen') + '</button><a class="abtn ghost" href="' + esc(sheetLink(t)) + '" target="_blank" rel="noopener">Open in sheet</a></div>' + arcBtn(t) + delBtn(t);
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '19';
+  var APP_VERSION = '20';
   var SWIPE_IN = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -1704,6 +1708,16 @@ body{padding-top:env(safe-area-inset-top)}
         return;
       case 'logout':
         ABC.signOut(); DATA = null; CACHE = {}; ERR = 'AUTH'; S.sel = null; S.panel = null; render(); return;
+      case 'arc':
+        if (DELETING) return;
+        var ax = findItem(v);
+        if (!ax || ax.kind === 'alf') return;
+        if (S.confirmArc !== v) { S.confirmArc = v; S.confirmDel = null; render(); return; }
+        DELETING = true; render();
+        timed(freshRow(ax).then(function (row) { return rpc('archiveTrip', [row.id, row.klantRaw, 'Uitbesteed']); }), 60000)
+          .then(function () { DELETING = false; S.confirmArc = null; S.sel = null; CACHE = {}; toast('Verplaatst naar tabblad Uitbesteed'); load(true); },
+            function (err) { DELETING = false; S.confirmArc = null; toast((err && err.message) || 'Verplaatsen is niet gelukt'); render(); });
+        return;
       case 'del':
         if (DELETING) return;
         var dx = findItem(v);
