@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ABC Instappen</title>
+<meta name="theme-color" content="#1F5E63">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ABC Instappen">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F4EFE7;--card:#FFFDF9;--ink:#1E1B16;--mut:#6B6257;--line:#ECE4D8;--zaza:#1F5E63;--mosi:#C2662D;--alf:#2E3A86;--ok:#2E7D4F;--okbg:#E3F2E7}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg)}
+body{font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+button,input{font-family:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.sg{font-family:'Space Grotesk',Inter,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--zaza);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 20px 14px}
+.hrow{display:flex;align-items:center;gap:12px}
+.hrow h1{margin:0;font-size:24px;flex:1;line-height:1.15}
+.hrow h1 small{display:block;font-family:Inter,sans-serif;font-size:13px;font-weight:500;opacity:.8}
+.nav{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.14);color:#fff;font-size:22px;font-weight:700}
+.today{height:44px;padding:0 14px;border-radius:14px;background:rgba(255,255,255,.14);color:#fff;font-weight:600;font-size:14px}
+.status{font-size:12px;opacity:.85;margin-top:8px;display:flex;gap:10px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:#7EE2A8;display:inline-block}
+.dot.off{background:#F2B36B}
+.tabs{display:flex;gap:8px;margin-top:12px;overflow-x:auto;scrollbar-width:none}
+.tab{flex:none;min-width:120px;padding:10px 14px;border-radius:16px;background:rgba(255,255,255,.14);color:#fff;text-align:left}
+.tab.on{background:#fff;color:var(--zaza)}
+.tab b{display:block;font-size:17px}
+.tab span{font-size:12px;opacity:.85}
+main{padding:16px 20px calc(env(safe-area-inset-bottom) + 40px);max-width:980px;margin:0 auto}
+.tools{display:flex;gap:10px;margin-bottom:12px}
+.search{flex:1;height:52px;border-radius:16px;border:1px solid var(--line);background:var(--card);padding:0 16px;font-size:18px;-webkit-user-select:text;user-select:text}
+.tgl{height:52px;padding:0 14px;border-radius:16px;background:var(--card);border:1px solid var(--line);font-weight:600;font-size:14px}
+.tgl.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.sum{display:flex;gap:10px;margin-bottom:12px}
+.sum>div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
+.sum b{font-size:24px;display:block}
+.sum span{font-size:12px;color:var(--mut)}
+.bar{height:8px;border-radius:5px;background:#E6DED2;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--ok)}
+.g{display:flex;align-items:stretch;background:var(--card);border:1px solid var(--line);border-radius:18px;margin-bottom:10px;overflow:hidden}
+.g.ok{background:var(--okbg);border-color:#BFE0C9}
+.ck{flex:none;width:84px;display:flex;align-items:center;justify-content:center}
+.ck i{width:46px;height:46px;border-radius:50%;border:3px solid #C9BFB1;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:26px;font-weight:700;color:#fff}
+.g.ok .ck i{background:var(--ok);border-color:var(--ok)}
+.g.pend .ck i{opacity:.6}
+.gi{flex:1;min-width:0;padding:14px 4px 14px 0}
+.gn{font-size:21px;font-weight:700;line-height:1.2}
+.gm{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center;font-size:14px;color:var(--mut)}
+.chip{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700}
+.pax{background:var(--ink);color:#fff}
+.en{background:#E3E6FA;color:var(--alf)}
+.alert{background:#FBE3DF;color:#9A2B1E}
+.ga{flex:none;display:flex;flex-direction:column;gap:8px;justify-content:center;padding:10px 14px 10px 0}
+.ga a{display:flex;align-items:center;justify-content:center;width:64px;height:40px;border-radius:12px;background:#EEF0FB;color:var(--alf);font-weight:700;font-size:13px;text-decoration:none}
+.ga a.wa{background:#DDF1E3;color:#2E5B3C}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:26px 0 10px}
+.trip{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--zaza);border-radius:18px;padding:14px 16px;margin-bottom:10px}
+.trip.mosi{border-left-color:var(--mosi)}
+.th{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.th b{font-size:19px}
+.th span{font-size:15px;font-weight:700;white-space:nowrap}
+.tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px;margin-top:10px;font-size:15px}
+.tg div span{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--mut);text-transform:uppercase}
+.tg a{color:var(--alf);font-weight:700;text-decoration:none}
+.tn{margin-top:10px;padding:10px 12px;border-radius:12px;background:#F6F1E9;font-size:15px}
+.empty{padding:30px 10px;text-align:center;color:var(--mut);font-size:16px}
+.err{background:#FBE3DF;color:#9A2B1E;padding:12px 14px;border-radius:14px;margin-bottom:12px;font-size:14px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+  'use strict';
+  var API = 'https://script.google.com/macros/s/AKfycbxlBxqfbn4fI7zYQHsRnfbSRjJNktApVXN9V_GyfSu3LU9ClUC1j5_q37AoZuckbS4_/exec';
+  var DOW = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
+  var MON = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+
+  function ls(k, v) {
+    try { if (v === undefined) return JSON.parse(localStorage.getItem('crew_' + k) || 'null'); localStorage.setItem('crew_' + k, JSON.stringify(v)); } catch (e) { return null; }
+  }
+  // code uit de link bewaren (de link mag daarna gewoon zonder code)
+  var KEY = new URLSearchParams(location.search).get('k') || ls('key') || '';
+  if (KEY) ls('key', KEY);
+
+  function pad(n) { return ('0' + n).slice(-2); }
+  function todayIso() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function addDays(iso, n) { var d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function longDate(iso) { var d = new Date(iso + 'T12:00:00'); return DOW[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()]; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function tel(t) {
+    var d = String(t || '').replace(/[^\d+]/g, '');
+    if (d.indexOf('+') === 0) return d.slice(1);
+    if (d.indexOf('00') === 0) return d.slice(2);
+    if (/^06\d{8}$/.test(d)) return '31' + d.slice(1);
+    return d;
+  }
+  function startOf(shift) { var m = /(\d{1,2})[:.](\d{2})/.exec(shift || ''); return m ? pad(m[1]) + ':' + m[2] : ''; }
+  function mins(hhmm) { return +hhmm.slice(0, 2) * 60 + +hhmm.slice(3, 5); }
+
+  var S = { date: todayIso(), shift: null, q: '', hide: false, data: ls('data_' + todayIso()), loading: false, err: '', online: navigator.onLine };
+  var PENDING = ls('pending') || {}; // row -> {naam, on, date}
+
+  function call(fn, args) {
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn: fn, args: args, crew: KEY }), redirect: 'follow' })
+      .then(function (r) { if (!r.ok) throw new Error('Server gaf foutcode ' + r.status); return r.json(); })
+      .then(function (j) { if (!j || !j.ok) { var e = new Error((j && j.error) || 'Onbekende fout'); e.auth = j && j.auth; throw e; } return j.data; });
+  }
+
+  function load() {
+    if (!KEY) { render(); return; }
+    var date = S.date;
+    S.loading = true; render();
+    call('crewList', [date]).then(function (d) {
+      if (date !== S.date) return;
+      S.loading = false; S.err = ''; S.online = true;
+      S.data = d; ls('data_' + date, d); render();
+    }, function (e) {
+      S.loading = false;
+      if (e.auth) S.err = e.message + ' Vraag Boris om een nieuwe link.';
+      else { S.online = false; S.err = ''; }
+      render();
+    });
+  }
+
+  function flush() {
+    var rows = Object.keys(PENDING);
+    if (!rows.length || !KEY) return;
+    rows.forEach(function (row) {
+      var p = PENDING[row];
+      if (p.busy) return;
+      p.busy = true;
+      call('crewCheck', [+row, p.naam, p.on]).then(function () {
+        var dd = ls('data_' + p.date);
+        [S.data, dd].forEach(function (d) {
+          (d && d.date === p.date ? d.guests : []).forEach(function (g) { if (String(g.row) === String(row)) g.check = p.on; });
+        });
+        if (dd) ls('data_' + p.date, dd);
+        if (PENDING[row] === p) delete PENDING[row];
+        ls('pending', PENDING); S.online = true; render();
+      }, function (e) {
+        p.busy = false;
+        if (/veranderd/i.test(e.message)) { delete PENDING[row]; ls('pending', PENDING); S.err = 'Vinkje voor ' + p.naam + ' niet opgeslagen: ' + e.message; load(); }
+        else { S.online = false; }
+        render();
+      });
+    });
+  }
+
+  function isChecked(g) { var p = PENDING[g.row]; return p ? p.on : g.check; }
+  function toggle(row) {
+    var g = (S.data && S.data.guests || []).filter(function (x) { return String(x.row) === String(row); })[0];
+    if (!g) return;
+    var on = !isChecked(g);
+    PENDING[row] = { naam: g.naam, on: on, date: S.date };
+    ls('pending', PENDING);
+    render(); flush();
+  }
+
+  function shiftsOf(guests) {
+    var m = {};
+    guests.forEach(function (g) { var s = g.shift || '—'; (m[s] = m[s] || []).push(g); });
+    return Object.keys(m).sort().map(function (k) { return { key: k, start: startOf(k), list: m[k] }; });
+  }
+  function pickShift(shifts) {
+    if (S.shift && shifts.some(function (s) { return s.key === S.shift; })) return S.shift;
+    if (!shifts.length) return null;
+    if (S.date !== todayIso()) return shifts[0].key;
+    var now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
+    for (var i = 0; i < shifts.length; i++) if (shifts[i].start && mins(shifts[i].start) + 60 > nm) return shifts[i].key;
+    return shifts[shifts.length - 1].key;
+  }
+
+  function guestRow(g) {
+    var on = isChecked(g), t = tel(g.telefoon), pend = !!PENDING[g.row];
+    return '<div class="g' + (on ? ' ok' : '') + (pend ? ' pend' : '') + '">' +
+      '<button class="ck" data-row="' + esc(g.row) + '" aria-label="' + esc(g.naam) + ' afvinken"><i>' + (on ? '✓' : '') + '</i></button>' +
+      '<div class="gi" data-row="' + esc(g.row) + '"><div class="gn">' + esc(g.naam) + '</div><div class="gm">' +
+      '<span class="chip pax">' + esc(g.pax || '?') + ' pax</span>' +
+      (g.en ? '<span class="chip en">EN</span>' : '') +
+      (g.drank ? '<span>' + esc(g.drank) + '</span>' : '') +
+      (g.platform ? '<span>· ' + esc(g.platform) + '</span>' : '') +
+      (g.opstap ? '<span class="chip alert">Opstap: ' + esc(g.opstap) + '</span>' : '') +
+      (g.boot ? '<span>· boot ' + esc(g.boot) + '</span>' : '') +
+      '</div></div>' +
+      (t ? '<div class="ga"><a href="tel:+' + esc(t) + '">Bel</a><a class="wa" href="https://wa.me/' + esc(t) + '" target="_blank" rel="noopener">App</a></div>' : '') +
+      '</div>';
+  }
+
+  function tripCard(t) {
+    var p = tel(t.telefoon);
+    var f = function (l, v) { return v ? '<div><span>' + l + '</span>' + v + '</div>' : ''; };
+    return '<div class="trip' + (t.boot === 'mosi' ? ' mosi' : '') + '"><div class="th"><b>' + esc(t.naam) + '</b><span>' + esc(t.tijd || t.start || '') + '</span></div>' +
+      '<div class="tg">' +
+      f('Gasten', esc(t.pax || '—')) +
+      f('Boot', esc(t.boot === 'zaza' ? 'Zaza' : t.boot === 'mosi' ? 'Mosi Jo' : 'nog niet bekend')) +
+      f('Opstap', esc(t.opstap || '—')) + f('Afstap', esc(t.afstap || '—')) +
+      f('Telefoon', p ? '<a href="tel:+' + esc(p) + '">+' + esc(p) + '</a> · <a href="https://wa.me/' + esc(p) + '" target="_blank" rel="noopener">WhatsApp</a>' : '—') +
+      f('Schipper', esc(t.schipper || '—')) + f('Drank', esc(t.drank || '—')) + f('Hapjes', esc(t.hapjes || '—')) +
+      (t.status && t.status !== 'Bevestigd' ? f('Status', esc(t.status)) : '') +
+      '</div>' + (t.notes ? '<div class="tn">' + esc(t.notes) + '</div>' : '') + '</div>';
+  }
+
+  function render() {
+    var app = document.getElementById('app');
+    if (!KEY) { app.innerHTML = '<main><div class="empty">Deze pagina werkt alleen via de crew-link van Boris.</div></main>'; return; }
+    var d = S.data && S.data.date === S.date ? S.data : null;
+    var guests = d ? d.guests : [], trips = d ? d.trips : [];
+    var shifts = shiftsOf(guests);
+    S.shift = pickShift(shifts);
+    var cur = shifts.filter(function (s) { return s.key === S.shift; })[0];
+    var npend = Object.keys(PENDING).length;
+    var hdr = '<header><div class="hrow"><button class="nav" data-go="-1" aria-label="Vorige dag">‹</button>' +
+      '<h1 class="sg">' + esc(longDate(S.date).replace(/^./, function (c) { return c.toUpperCase(); })) + '<small>ABC Instappen · Light Festival</small></h1>' +
+      (S.date !== todayIso() ? '<button class="today" data-go="0">Vandaag</button>' : '') +
+      '<button class="nav" data-go="1" aria-label="Volgende dag">›</button></div>' +
+      '<div class="status"><span class="dot' + (S.online ? '' : ' off') + '"></span>' +
+      (S.loading ? 'Bijwerken…' : (S.online ? 'Online' : 'Geen verbinding, lijst van ' + (d && d.updated ? new Date(d.updated).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) : 'eerder'))) +
+      (npend ? ' · ' + npend + ' vinkje' + (npend > 1 ? 's' : '') + ' nog versturen' : '') + '</div>' +
+      (shifts.length ? '<div class="tabs">' + shifts.map(function (s) {
+        var pax = 0, in_ = 0; s.list.forEach(function (g) { var p = parseInt(g.pax, 10) || 0; pax += p; if (isChecked(g)) in_ += p; });
+        return '<button class="tab' + (s.key === S.shift ? ' on' : '') + '" data-shift="' + esc(s.key) + '"><b>' + esc(s.start || s.key) + '</b><span>' + in_ + '/' + pax + ' aan boord</span></button>';
+      }).join('') + '</div>' : '') + '</header>';
+
+    var body = '';
+    if (S.err) body += '<div class="err">' + esc(S.err) + '</div>';
+    if (!d) body += '<div class="empty">' + (S.loading ? 'Lijst laden…' : 'Nog geen lijst voor deze dag. Zodra er verbinding is, wordt hij geladen.') + '</div>';
+    else {
+      if (cur) {
+        var list = cur.list.slice().sort(function (a, b) { return a.naam.localeCompare(b.naam); });
+        var pax = 0, inP = 0, nB = 0;
+        list.forEach(function (g) { var p = parseInt(g.pax, 10) || 0; pax += p; if (isChecked(g)) { inP += p; nB++; } });
+        var q = S.q.trim().toLowerCase();
+        var shown = list.filter(function (g) { return (!S.hide || !isChecked(g)) && (!q || (g.naam + ' ' + g.telefoon).toLowerCase().indexOf(q) >= 0); });
+        body += '<div class="sum"><div><b>' + inP + ' / ' + pax + '</b><span>gasten aan boord</span><div class="bar"><i style="width:' + (pax ? Math.round(inP / pax * 100) : 0) + '%"></i></div></div>' +
+          '<div><b>' + nB + ' / ' + list.length + '</b><span>boekingen binnen</span></div></div>' +
+          '<div class="tools"><input class="search" id="q" type="search" placeholder="Zoek naam…" value="' + esc(S.q) + '" autocomplete="off">' +
+          '<button class="tgl' + (S.hide ? ' on' : '') + '" data-hide="1">' + (S.hide ? 'Toon iedereen' : 'Verberg aan boord') + '</button></div>' +
+          (shown.length ? shown.map(guestRow).join('') : '<div class="empty">' + (q ? 'Niemand gevonden met "' + esc(S.q) + '".' : 'Iedereen is aan boord.') + '</div>');
+      } else body += '<div class="empty">Vandaag geen losse tickets.</div>';
+      if (trips.length) body += '<h2>Privétochten vandaag</h2>' + trips.slice().sort(function (a, b) { return (a.start || '') < (b.start || '') ? -1 : 1; }).map(tripCard).join('');
+    }
+    var hadFocus = document.activeElement && document.activeElement.id === 'q', pos = hadFocus ? document.activeElement.selectionStart : 0;
+    app.innerHTML = hdr + '<main>' + body + '</main>';
+    if (hadFocus) { var el = document.getElementById('q'); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch (e) { /* */ } } }
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-row],[data-go],[data-shift],[data-hide]');
+    if (!t) return;
+    if (t.hasAttribute('data-row')) { if (e.target.closest('a')) return; toggle(t.getAttribute('data-row')); }
+    else if (t.hasAttribute('data-go')) {
+      var n = +t.getAttribute('data-go');
+      S.date = n === 0 ? todayIso() : addDays(S.date, n); S.shift = null; S.q = ''; S.err = '';
+      S.data = ls('data_' + S.date); load();
+    }
+    else if (t.hasAttribute('data-shift')) { S.shift = t.getAttribute('data-shift'); S.q = ''; render(); window.scrollTo(0, 0); }
+    else if (t.hasAttribute('data-hide')) { S.hide = !S.hide; render(); }
+  });
+  document.addEventListener('input', function (e) { if (e.target.id === 'q') { S.q = e.target.value; render(); } });
+  window.addEventListener('online', function () { S.online = true; flush(); load(); });
+  window.addEventListener('offline', function () { S.online = false; render(); });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { if (S.date < todayIso()) { S.date = todayIso(); S.shift = null; } flush(); load(); } });
+  setInterval(function () { flush(); if (!document.hidden) load(); }, 60000);
+  setInterval(flush, 15000);
+
+  if (KEY && location.search) history.replaceState(null, '', location.pathname + '?k=' + encodeURIComponent(KEY));
+  render(); flush(); load();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+})();
+</script>
+</body>
+</html>

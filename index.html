@@ -1187,7 +1187,8 @@ body{padding-top:env(safe-area-inset-top)}
     if (r.email) rows.push(['E-mail', '<a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>']);
     if (en) rows.push(['Taal', 'Engels']);
     var key = r.row || (r.naam + r.date);
-    return '<details class="tkr" data-tk="' + esc(key) + '"' + (TK_OPEN[key] ? ' open' : '') + '><summary><span class="n">' + esc(r.naam) + '</span><span class="p">' + esc(r.pax || '?') + ' pax</span>' + platChip(r.platform) + '<span class="ar">▶</span></summary>' +
+    var aan = /^(true|waar|ja|x|✓)$/i.test(String(r.check || '').trim());
+    return '<details class="tkr" data-tk="' + esc(key) + '"' + (TK_OPEN[key] ? ' open' : '') + '><summary><span class="n">' + (aan ? '<span style="color:#2E7D4F" title="Aan boord">✓ </span>' : '') + esc(r.naam) + '</span><span class="p">' + esc(r.pax || '?') + ' pax</span>' + platChip(r.platform) + '<span class="ar">▶</span></summary>' +
       '<div class="tk-b">' + rows.map(function (x) { return '<div><span>' + x[0] + '</span><span>' + x[1] + '</span></div>'; }).join('') +
       (tel ? '<div class="tk-act"><a href="tel:+' + esc(tel) + '">Bellen</a><a class="wa" target="_blank" rel="noopener" href="https://wa.me/' + esc(tel) + '">WhatsApp</a></div>' : '') +
       '</div></details>';
@@ -1541,7 +1542,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '16';
+  var APP_VERSION = '17';
   var SWIPE_IN = '';
   var PAYING = null;
   function setPaidLocal(id, val) {

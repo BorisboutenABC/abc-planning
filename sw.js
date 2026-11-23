@@ -1,6 +1,6 @@
 // ABC Planning — service worker: app snel openen, altijd de nieuwste versie als er internet is.
-const CACHE = 'abc-planning-v16';
-const SHELL = ['./', 'index.html', 'data.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+const CACHE = 'abc-planning-v17';
+const SHELL = ['./', 'index.html', 'crew.html', 'data.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -21,6 +21,6 @@ self.addEventListener('fetch', (e) => {
         caches.open(CACHE).then((c) => c.put(e.request, copy));
         return res;
       })
-      .catch(() => caches.match(e.request).then((r) => r || caches.match('index.html')))
+      .catch(() => caches.match(e.request, { ignoreSearch: true }).then((r) => r || caches.match(url.pathname.endsWith('crew.html') ? 'crew.html' : 'index.html')))
   );
 });
