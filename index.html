@@ -119,6 +119,9 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .cvimg{flex:1;overflow:auto;width:100%;max-width:560px;border-radius:14px;-webkit-overflow-scrolling:touch}
 .cvimg img{width:100%;display:block;border-radius:14px}
 .abtns{display:flex;gap:8px}.abtns .abtn{flex:1}
+.cvseg{display:flex;gap:6px;width:100%;max-width:560px;margin-bottom:8px;overflow-x:auto}
+.cvseg button{flex:1;white-space:nowrap;border:0;border-radius:999px;padding:9px 12px;font:600 13px Inter,system-ui,sans-serif;background:rgba(255,253,249,.25);color:#fff}
+.cvseg button.on{background:var(--card);color:var(--ink)}
 .flags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .chip{border-radius:999px;padding:3px 8px;font-size:11px;font-weight:600;white-space:nowrap}
 .alfc{display:block;width:100%;text-align:left;border:2px solid transparent;border-radius:18px;padding:14px;background:#EEF0FB;color:#2E3A86}
@@ -611,6 +614,8 @@ body{padding-top:env(safe-area-inset-top)}
   /* ---------- WhatsApp (zelfde teksten als de formules in de sheet) ---------- */
   function locLink(n) { return DATA.loc[(n || '').trim().toLowerCase()] || ''; }
   var WATER_URL = 'https://grachtalert.nl/waterstand/';
+  function hostTel(n) { var k = (n || '').trim().toLowerCase(), h = DATA && (DATA.raw.hosts || []).filter(function (x) { return x.naam.toLowerCase() === k; })[0]; return h && h.tel ? h.tel.replace(/^00/, '').replace(/^0/, '31') : ''; }
+  function crewTel(role, n) { return role === 'host' ? hostTel(n) : skTel(n); }
   function skTel(n) { return DATA.sk[(n || '').trim().toLowerCase()] || ''; }
   function ddmmyyyy(s) { return s.slice(8, 10) + '-' + s.slice(5, 7) + '-' + s.slice(0, 4); }
   function dagNaam(t) { return (t.dag || NL_DOW[dow(t.date)]).trim(); }
@@ -639,8 +644,8 @@ body{padding-top:env(safe-area-inset-top)}
     }
     return 'https://wa.me/' + t.phone + '?text=' + encodeURIComponent(msg);
   }
-  function waSchipper(t) {
-    var sk = t.schipper.trim(), N = '\n';
+  function waSchipper(t, role) {
+    var sk = ((role === 'host' ? t.host : t.schipper) || '').trim(), N = '\n';
     var klant = t.klantRaw.replace(PHONE_G, '').trim() + (t.phone ? ' +' + t.phone : '');
     var msg = (sk ? 'Hey ' + proper(sk) : 'Hey') + ', hierbij de gegevens voor je tocht:' + N + N +
       '*Datum:* ' + dagNaam(t) + ' ' + ddmmyyyy(t.date) + N + '*Tijd:* ' + t.tijd + N + '*Opstap:* ' + t.opstap + N + '*Afstap:* ' + t.afstap + N +
@@ -650,7 +655,7 @@ body{padding-top:env(safe-area-inset-top)}
       'Na afloop de boot graag schoon en leeg achterlaten en de bar weer aanvullen, zodat alles klaar is voor de volgende groep.' + N + N +
       '*Waterstand op de dag zelf:* ' + WATER_URL + N + N +
       'Bij vragen kun je ons altijd even een berichtje sturen. Fijne tocht!';
-    return 'https://wa.me/' + skTel(sk) + '?text=' + encodeURIComponent(msg);
+    return 'https://wa.me/' + (role === 'host' ? hostTel(sk) : skTel(sk)) + '?text=' + encodeURIComponent(msg);
   }
   function sheetLink(x) {
     if (!DATA || !DATA.raw.sheetUrl) return '';
@@ -719,7 +724,8 @@ body{padding-top:env(safe-area-inset-top)}
     var k = waKlant(t);
     return '<div class="acts">' +
       (k ? '<a class="abtn k" href="' + esc(k) + '" target="_blank" rel="noopener">App klant' + (t.en ? ' EN' : '') + '</a>' : '<span class="abtn off" title="Geen telefoonnummer">Geen tel. klant</span>') +
-      '<a class="abtn s" href="' + esc(waSchipper(t)) + '" target="_blank" rel="noopener">App schipper</a></div>' + cardButtons(t);
+      '<a class="abtn s" href="' + esc(waSchipper(t)) + '" target="_blank" rel="noopener">App schipper</a>' +
+      (t.host ? '<a class="abtn s" style="background:#2E3A86" href="' + esc(waSchipper(t, 'host')) + '" target="_blank" rel="noopener">App host</a>' : '') + '</div>' + cardButtons(t);
   }
   function secButtons(t) {
     return '<div class="acts"><button class="abtn ghost" data-act="edit">Bewerken</button><a class="abtn ghost" href="' + esc(sheetLink(t)) + '" target="_blank" rel="noopener">Open in sheet</a></div>' + arcBtn(t) + delBtn(t);
@@ -864,14 +870,15 @@ body{padding-top:env(safe-area-inset-top)}
     return jspdfP;
   }
   function cardTrips(t) {
-    if (!t.schipper) return [t];
-    var k = t.schipper.trim().toLowerCase();
-    var l = DATA.trips.filter(function (x) { return x.date === t.date && (x.schipper || '').trim().toLowerCase() === k; });
+    var role = t.role || 'schipper', who = (role === 'host' ? t.host : t.schipper) || '';
+    if (!who.trim()) return [t];
+    var k = who.trim().toLowerCase();
+    var l = DATA.trips.filter(function (x) { return x.date === t.date && (x[role] || '').trim().toLowerCase() === k; });
     // Light Festival-shifts waarop deze schipper staat ingedeeld (losse tickets)
     DATA.alfs.forEach(function (a) {
       if (a.date !== t.date) return;
       (a.boats || []).forEach(function (b) {
-        if ((b.schipper || '').trim().toLowerCase() !== k || /vaart niet|priv/i.test(b.status || a.status || '')) return;
+        if ((b[role] || '').trim().toLowerCase() !== k || /vaart niet|priv/i.test(b.status || a.status || '')) return;
         l.push({ kind: 'alfcard', date: a.date, timeLabel: a.timeLabel || a.start || '', startMin: a.startMin, schipper: b.schipper, boat: b.boat, host: b.host || '', pax: b.pax || 0, booked: a.booked, cap: a.cap, opstap: a.opstap || '' });
       });
     });
@@ -880,6 +887,9 @@ body{padding-top:env(safe-area-inset-top)}
   }
   function alfBoatKey(name) { var n = (name || '').toLowerCase(); return /zaza/.test(n) ? 'zaza' : /mosi/.test(n) ? 'mosi' : 'alf'; }
   function skCardButtons(a) {
+    return cardPeople(a).length ? '<button class="abtn ghost" style="width:100%" data-act="cardopen:' + esc(a.id) + '">Vaarkaarten bekijken &amp; delen</button>' : '';
+  }
+  function skCardButtonsOud(a) {
     var seen = [];
     (a.boats || []).forEach(function (b) {
       var sk = (b.schipper || '').trim();
@@ -914,7 +924,7 @@ body{padding-top:env(safe-area-inset-top)}
     var cv = document.createElement('canvas'); cv.width = W; cv.height = 7000;
     var c = cv.getContext('2d'), links = [];
     c.fillStyle = '#F4EFE7'; c.fillRect(0, 0, W, cv.height);
-    var t0 = list[0], sk = (t0.schipper || '').trim(), y = M;
+    var t0 = list[0], role = list.role || 'schipper', sk = ((role === 'host' ? list.who : t0.schipper) || '').trim(), y = M;
 
     // kop
     rrect(c, M, y, W - 2 * M, 200, 34, '#1F5E63');
@@ -929,7 +939,7 @@ body{padding-top:env(safe-area-inset-top)}
     // datum + schipper
     c.fillStyle = '#1E1B16'; c.font = '700 54px ' + SG; c.fillText(longDate(t0.date), M + 6, y + 48);
     c.fillStyle = '#6B6257'; c.font = '500 32px ' + IT;
-    c.fillText((sk ? 'Schipper: ' + proper(sk) : 'Schipper nog niet ingedeeld') + '  ·  ' + plural(list.length, 'vaart', 'vaarten'), M + 6, y + 100);
+    c.fillText((sk ? (role === 'host' ? 'Host: ' : 'Schipper: ') + proper(sk) : 'Schipper nog niet ingedeeld') + '  ·  ' + plural(list.length, 'vaart', 'vaarten'), M + 6, y + 100);
     y += 140;
     // waterstand: één keer bovenaan; bij een latere datum de huidige stand met meetmoment
     // waterstand: klikbare link naar GrachtAlert (actueel op de dag zelf)
@@ -949,6 +959,7 @@ body{padding-top:env(safe-area-inset-top)}
       var rows = A ? [
         ['VAART', 'Light Festival — losse tickets'],
         ['BOOT', t.boat || '—'],
+        ['SCHIPPER', t.schipper ? proper(t.schipper) : 'Nog niet ingedeeld'],
         ['HOST', t.host ? proper(t.host) : 'Nog niet ingedeeld'],
         ['GASTEN', t.pax ? t.pax + ' personen op deze boot' : (t.cap ? t.booked + ' van ' + t.cap + ' verkocht (totaal)' : '—')],
         ['OPSTAP', t.opstap, locLink(t.opstap)]
@@ -961,7 +972,7 @@ body{padding-top:env(safe-area-inset-top)}
         ['HAPJES', t.hapjes ? cap(t.hapjes) : '—'],
         ['OPSTAP', t.opstap || '—', locLink(t.opstap)],
         ['AFSTAP', t.afstap || '—', locLink(t.afstap)]
-      ];
+      ].concat(role === 'host' ? [['SCHIPPER', t.schipper ? proper(t.schipper) : 'Nog niet ingedeeld']] : []).concat(t.host ? [['HOST', proper(t.host)]] : []);
       var LW = 230, VW = CW - LW;
       c.font = '600 36px ' + IT;
       var rowLines = rows.map(function (r) { return wrapText(c, r[1], VW); });
@@ -1052,7 +1063,8 @@ body{padding-top:env(safe-area-inset-top)}
     return { canvas: out, links: links };
   }
   function cardFiles(t) {
-    var list = cardTrips(t);
+    var list = cardTrips(t), role = t.role || 'schipper';
+    list.role = role; list.who = role === 'host' ? t.host : t.schipper;
     var fonts = document.fonts && document.fonts.load ? Promise.all(['700 60px "Space Grotesk"', '600 36px Inter', '700 24px Inter', '500 30px Inter'].map(function (f) { return document.fonts.load(f); })).catch(function () {}) : Promise.resolve();
     return Promise.all([loadJsPDF(), fonts]).then(function (r) {
       var JsPDF = r[0], d = drawCard(list);
@@ -1060,7 +1072,7 @@ body{padding-top:env(safe-area-inset-top)}
       var pdf = new JsPDF({ unit: 'mm', format: [pw, ph], orientation: 'portrait', compress: true });
       pdf.addImage(d.canvas.toDataURL('image/jpeg', 0.93), 'JPEG', 0, 0, pw, ph);
       d.links.forEach(function (l) { pdf.link(l.x * k, l.y * k, l.w * k, l.h * k, { url: l.url }); });
-      var sk = (t.schipper || '').trim();
+      var sk = ((role === 'host' ? t.host : t.schipper) || '').trim();
       var base = 'Vaarkaart ' + t.date.slice(8, 10) + '-' + t.date.slice(5, 7) + ' ' + (sk ? proper(sk) : first(t.name));
       return new Promise(function (res) {
         d.canvas.toBlob(function (png) {
@@ -1068,7 +1080,7 @@ body{padding-top:env(safe-area-inset-top)}
             pdf: new File([pdf.output('blob')], base + '.pdf', { type: 'application/pdf' }),
             png: new File([png], base + '.png', { type: 'image/png' }),
             text: (sk ? 'Hey ' + proper(sk) + ', hierbij' : 'Hierbij') + ' de vaarkaart voor ' + longDate(t.date).toLowerCase() + '.\nWaterstand op de dag zelf: ' + WATER_URL,
-            tel: sk ? skTel(sk) : ''
+            tel: sk ? crewTel(role, sk) : ''
           });
         }, 'image/png');
       });
@@ -1079,12 +1091,36 @@ body{padding-top:env(safe-area-inset-top)}
   }
   /* laptop: vaarkaart als afbeelding naar het klembord en WhatsApp (app) openen bij de schipper met de tekst erin.
      De klembord-actie moet direct in de klik starten, daarom krijgt ClipboardItem een belofte (Promise) mee. */
+  /* vaarkaart-id: tocht-id, 'sk|datum|naam' (schipper) of 'hs|datum|naam' (host) */
+  function cardItem(id) {
+    var sp = id.split('|');
+    if (sp[0] === 'sk' || sp[0] === 'hs') {
+      var nm = sp.slice(2).join('|');
+      return sp[0] === 'hs' ? { date: sp[1], host: nm, role: 'host', name: '' } : { date: sp[1], schipper: nm, role: 'schipper', name: '' };
+    }
+    return findItem(id);
+  }
+  /* wie kan een vaarkaart krijgen bij deze tocht of shift: schipper(s) en host(s) */
+  function cardPeople(x) {
+    var out = [], seen = {};
+    function add(role, nm) {
+      nm = (nm || '').trim(); if (!nm) return;
+      var id = (role === 'host' ? 'hs|' : 'sk|') + x.date + '|' + nm;
+      if (seen[id]) return; seen[id] = 1;
+      out.push({ id: id, label: (role === 'host' ? 'Host · ' : 'Schipper · ') + proper(nm) });
+    }
+    if (x.kind === 'alf') (x.boats || []).forEach(function (b) { if (!/vaart niet|priv/i.test(b.status || x.status || '')) { add('schipper', b.schipper); add('host', b.host); } });
+    else { add('schipper', x.schipper); add('host', x.host); }
+    return out;
+  }
   /* voorbeeld van de vaarkaart in een venster, met knoppen om te sluiten of meteen te versturen */
+  var CV_PEOPLE = null;
   function showCardPreview(f, id) {
-    var old = document.querySelector('.cvov'); if (old) old.remove();
+    var old = document.querySelector('.cvov'); if (old) { URL.revokeObjectURL(old.getAttribute('data-url')); old.remove(); }
     var url = URL.createObjectURL(f.png), ov = document.createElement('div');
     ov.className = 'cvov'; ov.setAttribute('data-url', url);
-    ov.innerHTML = '<div class="cvbar"><button data-act="cvclose" style="background:var(--card);color:var(--ink)">Sluiten</button>' +
+    var ppl = CV_PEOPLE && CV_PEOPLE.length > 1 ? '<div class="cvseg">' + CV_PEOPLE.map(function (p) { return '<button data-act="cardview:' + esc(p.id) + '" class="' + (p.id === id ? 'on' : '') + '">' + esc(p.label) + '</button>'; }).join('') + '</div>' : '';
+    ov.innerHTML = ppl + '<div class="cvbar"><button data-act="cvclose" style="background:var(--card);color:var(--ink)">Sluiten</button>' +
       '<button data-act="card:pdf:' + esc(id) + '" style="background:var(--zaza);color:#fff">' + (S.mobile ? 'Delen' : 'Via WhatsApp') + '</button></div>' +
       '<div class="cvimg"><img alt="Voorbeeld vaarkaart" src="' + url + '"></div>';
     ov.addEventListener('click', function (e) { if (e.target === ov) act('cvclose'); });
@@ -1142,7 +1178,7 @@ body{padding-top:env(safe-area-inset-top)}
     });
   }
   function cardButtons(t) {
-    return '<div class="abtns"><button class="abtn ghost" data-act="cardview:' + esc(t.id) + '">Vaarkaart bekijken</button><button class="abtn ghost" data-act="card:pdf:' + esc(t.id) + '">' + (S.mobile ? 'Vaarkaart delen' : 'Via WhatsApp') + '</button></div>';
+    return '<button class="abtn ghost" style="width:100%" data-act="cardopen:' + esc(t.id) + '">Vaarkaart bekijken &amp; delen</button>';
   }
 
   /* ---------- todo's ---------- */
@@ -1179,7 +1215,7 @@ body{padding-top:env(safe-area-inset-top)}
         datum: t.date, start: t.start, end: t.end, naam: t.naamRaw, tel: t.phone ? '+' + t.phone : '', pax: t.pax || '',
         drank: t.drankRaw, hapjes: t.hapjes, opstap: t.opstap, afstap: t.afstap,
         boot: /zaza/i.test(t.boatRaw) ? 'ZAZA' : (/mosi/i.test(t.boatRaw) ? 'Mosi Jo' : ''),
-        schipper: t.schipper, status: /^\s*optie\b/i.test(t.notes) ? 'Optie' : 'Bevestigd',
+        schipper: t.schipper, host: t.host || '', status: /^\s*optie\b/i.test(t.notes) ? 'Optie' : 'Bevestigd',
         notes: t.notes.replace(/^OPTIE\s*·?\s*/i, ''), en: /\bEN\b/.test(t.klantRaw), betaald: !!t.paid
       };
     }
@@ -1204,6 +1240,8 @@ body{padding-top:env(safe-area-inset-top)}
     var v = formValues();
     var sk = (DATA ? DATA.raw.schippers : []).map(function (s) { return s.naam; });
     if (v.schipper && sk.map(function (x) { return x.toLowerCase(); }).indexOf(v.schipper.toLowerCase()) < 0) sk.push(v.schipper);
+    var hs = (DATA ? (DATA.raw.hosts || []) : []).map(function (s) { return s.naam; });
+    if (v.host && hs.map(function (x) { return x.toLowerCase(); }).indexOf(v.host.toLowerCase()) < 0) hs.push(v.host);
     var dr = DRANK.slice(); if (v.drank && dr.indexOf(v.drank) < 0) dr.push(v.drank);
     var locs = (DATA ? DATA.raw.locaties : []).map(function (l) { return '<option value="' + esc(l.naam) + '"></option>'; }).join('');
     var hap = HAPJES.map(function (h) { return '<option value="' + esc(h) + '"></option>'; }).join('');
@@ -1227,6 +1265,7 @@ body{padding-top:env(safe-area-inset-top)}
       locField('afstap', 'Afstap', v.afstap, h) +
       '<label class="' + h + '"><span>Boot</span><select name="boot">' + opt('', 'Nog kiezen', v.boot) + opt('ZAZA', 'Zaza', v.boot) + opt('Mosi Jo', 'Mosi Jo', v.boot) + '</select></label>' +
       '<label class="' + h + '"><span>Schipper</span><select name="schipper">' + opt('', 'Nog indelen', v.schipper) + sk.map(function (n) { return opt(n, n, (v.schipper || '').toLowerCase() === n.toLowerCase() ? n : ''); }).join('') + '</select></label>' +
+      '<label class="' + h + '"><span>Host</span><select name="host">' + opt('', 'Geen host', v.host || '') + hs.map(function (n) { return opt(n, n, (v.host || '').toLowerCase() === n.toLowerCase() ? n : ''); }).join('') + '</select></label>' +
       '<label class="w"><span>Status</span><select name="status">' + opt('Bevestigd', 'Bevestigd', v.status) + opt('Optie', 'Optie', v.status) + '</select></label>' +
       '<label class="ck"><input type="checkbox" name="betaald"' + (v.betaald ? ' checked' : '') + '><span>Betaald</span></label>' +
       '<label class="w"><span>Bijzonderheden</span><input type="text" name="notes" placeholder="Bijv. verwarming, versiering, cash" value="' + esc(v.notes) + '"></label>' +
@@ -1418,7 +1457,7 @@ body{padding-top:env(safe-area-inset-top)}
       '<div><div class="kl">CONTACT</div><div class="kv">' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : 'Ontbreekt') + '</div></div>' +
       '</div></div>' +
       '<div class="box white"><div class="bh">DRANK &amp; BIJZONDERHEDEN</div><div class="g2"><div><div class="kl">DRANK</div><div class="kv">' + esc(drankLabel(t)) + '</div></div><div><div class="kl">GASTEN</div><div class="kv">' + (t.pax || '—') + '</div></div></div><div class="notes">' + esc(t.notes || '—') + '</div></div>' +
-      '<div class="box" style="background:' + (t.schipper ? '#E3F2E7' : '#FBE3DF') + '"><div class="bh" style="color:#2E5B3C">CREW</div><div class="crew"><div class="crew-l"><div class="ci">' + esc(t.schipper ? t.schipper.charAt(0).toUpperCase() : '?') + '</div><div><div class="b">' + esc(t.schipper || 'Nog niet ingedeeld') + '</div><div class="m12" style="color:#4A5A4E">Schipper</div></div></div><button class="sbtn" data-act="edit">' + (t.schipper ? 'Wijzigen' : 'Indelen') + '</button></div></div>' +
+      '<div class="box" style="background:' + (t.schipper ? '#E3F2E7' : '#FBE3DF') + '"><div class="bh" style="color:#2E5B3C">CREW</div><div class="crew"><div class="crew-l"><div class="ci">' + esc(t.schipper ? t.schipper.charAt(0).toUpperCase() : '?') + '</div><div><div class="b">' + esc(t.schipper || 'Nog niet ingedeeld') + '</div><div class="m12" style="color:#4A5A4E">Schipper' + (t.host ? ' · host: ' + esc(t.host) : '') + '</div></div></div><button class="sbtn" data-act="edit">' + (t.schipper ? 'Wijzigen' : 'Indelen') + '</button></div></div>' +
       '<div class="box cat"><div class="bh" style="color:#8A4513">CATERING</div><div class="cat-t">' + esc(t.hapjes ? cap(t.hapjes) : 'Nog niets geregeld') + '</div><div class="cat-s">' + (t.hapjes ? 'Voor ' + (t.pax || '?') + ' gasten' : 'Voeg hapjes toe voor ' + (t.pax || '?') + ' gasten.') + '</div></div>' +
       conflictBox(t) + waButtons(t) + secButtons(t) +
       '</div>';
@@ -1432,7 +1471,7 @@ body{padding-top:env(safe-area-inset-top)}
       '<div class="tiles"><div class="tile"><div class="l">Gasten</div><div class="v">' + (t.pax || '—') + '</div></div><div class="tile"><div class="l">Boot</div><div class="v">' + esc(BOAT[bk(t)].label) + '</div></div>' +
       '<div class="tile"><div class="l">Drank</div><div class="v2">' + esc(drankLabel(t)) + '</div></div><div class="tile"><div class="l">Hapjes</div><div class="v2">' + esc(t.hapjes ? cap(t.hapjes) : '—') + '</div></div></div>' +
       '<div class="rows"><div><span>Opstap</span>' + locHtml(t.opstap) + '</div><div><span>Afstap</span>' + locHtml(t.afstap) + '</div><div><span>Weer</span><span>' + esc(wxTripText(t)) + '</span></div><div><span>Bron</span><span>' + esc(t.source || 'Planning') + '</span></div><div><span>Telefoon</span>' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : '<span>— ontbreekt</span>') + '</div></div>' +
-      '<div class="skb" style="background:' + (t.schipper ? '#E4F0F0' : '#FBE3DF') + '"><div style="display:flex;align-items:center;gap:10px"><div class="ski">' + esc(t.schipper ? t.schipper.charAt(0).toUpperCase() : '?') + '</div><div><div class="m12" style="font-size:11px">Schipper</div><div class="b">' + esc(t.schipper || 'Nog niet ingedeeld') + '</div></div></div><button class="sbtn" data-act="edit">' + (t.schipper ? 'Wijzigen' : 'Indelen') + '</button></div>' +
+      '<div class="skb" style="background:' + (t.schipper ? '#E4F0F0' : '#FBE3DF') + '"><div style="display:flex;align-items:center;gap:10px"><div class="ski">' + esc(t.schipper ? t.schipper.charAt(0).toUpperCase() : '?') + '</div><div><div class="m12" style="font-size:11px">Schipper' + (t.host ? ' · host: ' + esc(t.host) : '') + '</div><div class="b">' + esc(t.schipper || 'Nog niet ingedeeld') + '</div></div></div><button class="sbtn" data-act="edit">' + (t.schipper ? 'Wijzigen' : 'Indelen') + '</button></div>' +
       '<div><div class="m12" style="font-weight:500;margin-bottom:6px">Bijzonderheden</div><div class="nbox">' + esc(t.notes || '—') + '</div></div>' +
       conflictBox(t) + payBox(t) + waButtons(t) + secButtons(t) + '</div>';
   }
@@ -1550,7 +1589,7 @@ body{padding-top:env(safe-area-inset-top)}
     return '<button class="tcard' + (t.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(t.id) + '" aria-label="Open tocht ' + esc(t.name) + '">' +
       '<div class="tc-top"><span class="tc-time">' + esc(t.timeLabel) + '</span>' + chip(b.short, b.chip) + '</div>' +
       '<div class="tc-name">' + esc(t.name) + langTag(t) + '</div><div class="tc-sub">' + (t.pax || '?') + ' pers · ' + esc(drankLabel(t)) + ' · ' + esc(t.opstap || '—') + '</div>' +
-      '<div class="tc-sk' + (t.schipper ? '' : ' miss') + '">' + (t.schipper ? 'Schipper: ' + esc(t.schipper) : 'Nog geen schipper') + '</div>' + (wxTrip(t) ? '<div class="wxline">' + wxTripHtml(t) + '</div>' : '') + flagsHtml(t) + '</button>';
+      '<div class="tc-sk' + (t.schipper ? '' : ' miss') + '">' + (t.schipper ? 'Schipper: ' + esc(t.schipper) : 'Nog geen schipper') + (t.host ? '<span style="color:#2E3A86"> · Host: ' + esc(t.host) + '</span>' : '') + '</div>' + (wxTrip(t) ? '<div class="wxline">' + wxTripHtml(t) + '</div>' : '') + flagsHtml(t) + '</button>';
   }
   function walfCard(a) {
     return '<button class="walf' + (a.id === S.sel ? ' on' : '') + '" data-act="sel:' + esc(a.id) + '"><div class="b">' + esc(a.timeLabel || a.start || '') + ' · Light Festival</div><div>' + (a.cap ? a.booked + '/' + a.cap + ' tickets' : esc(a.note || '')) + '</div></button>';
@@ -1822,7 +1861,7 @@ body{padding-top:env(safe-area-inset-top)}
     return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><div class="m12">' + esc(dayMonth(t.date)) + ' · ' + esc(t.timeLabel) + '</div><div class="sg" style="font-weight:700;font-size:24px">' + esc(t.name) + langTag(t) + '</div><div style="margin-top:6px">' + statusChip(t) + '</div></div>' + '<button class="x" style="width:40px;height:40px" data-act="close" aria-label="Sluiten">×</button></div>' +
       '<div class="tiles"><div class="tile"><div class="l">Gasten</div><div class="v" style="font-size:17px">' + (t.pax || '—') + '</div></div><div class="tile"><div class="l">Boot</div><div class="v" style="font-size:17px">' + esc(BOAT[bk(t)].label) + '</div></div>' +
       '<div class="tile"><div class="l">Drank</div><div class="v2">' + esc(drankLabel(t)) + '</div></div><div class="tile"><div class="l">Hapjes</div><div class="v2">' + esc(t.hapjes ? cap(t.hapjes) : '—') + '</div></div></div>' +
-      '<div class="rows"><div><span>Opstap</span>' + locHtml(t.opstap) + '</div><div><span>Afstap</span>' + locHtml(t.afstap) + '</div><div><span>Weer</span><span>' + esc(wxTripText(t)) + '</span></div><div><span>Schipper</span><span>' + esc(t.schipper || 'Nog niet ingedeeld') + '</span></div><div><span>Telefoon</span>' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : '<span>Ontbreekt</span>') + '</div>' + (t.source ? '<div><span>Bron</span><span>' + esc(t.source) + '</span></div>' : '') + '</div>' +
+      '<div class="rows"><div><span>Opstap</span>' + locHtml(t.opstap) + '</div><div><span>Afstap</span>' + locHtml(t.afstap) + '</div><div><span>Weer</span><span>' + esc(wxTripText(t)) + '</span></div><div><span>Schipper</span><span>' + esc(t.schipper || 'Nog niet ingedeeld') + '</span></div>' + (t.host ? '<div><span>Host</span><span>' + esc(t.host) + '</span></div>' : '') + '<div><span>Telefoon</span>' + (t.phone ? '<a target="_top" href="tel:+' + esc(t.phone) + '">+' + esc(t.phone) + '</a>' : '<span>Ontbreekt</span>') + '</div>' + (t.source ? '<div><span>Bron</span><span>' + esc(t.source) + '</span></div>' : '') + '</div>' +
       '<div class="nbox">' + esc(t.notes || '—') + '</div>' +
       conflictBox(t) + payBox(t) +
       waButtons(t).replace(/class="abtn/g, 'style="padding:14px;font-size:14px" class="abtn') +
@@ -1830,7 +1869,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '33';
+  var APP_VERSION = '34';
   var SWIPE_IN = '', SWIPE_DAY = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -1921,8 +1960,14 @@ body{padding-top:env(safe-area-inset-top)}
     var i = a.indexOf(':'), k = i < 0 ? a : a.slice(0, i), v = i < 0 ? '' : a.slice(i + 1);
     switch (k) {
       case 'noop': return;
+      case 'cardopen':
+        var ox = findItem(v); if (!ox) return;
+        CV_PEOPLE = cardPeople(ox);
+        var fid = ox.kind === 'alf' ? (CV_PEOPLE[0] && CV_PEOPLE[0].id) : (ox.schipper ? 'sk|' + ox.date + '|' + ox.schipper.trim() : v);
+        if (!fid) return;
+        act('cardview:' + fid); return;
       case 'cardview':
-        var vt = v.indexOf('sk|') === 0 ? (function (sp) { return { date: sp[1], schipper: sp.slice(2).join('|'), name: '' }; })(v.split('|')) : findItem(v);
+        var vt = cardItem(v);
         if (!vt || vt.kind === 'alf') return;
         toast('Voorbeeld maken…');
         cardFiles(vt).then(function (f) { showCardPreview(f, v); }, function (e) { toast((e && e.message) || 'Vaarkaart maken is niet gelukt.'); });
@@ -1930,8 +1975,7 @@ body{padding-top:env(safe-area-inset-top)}
       case 'cvclose': var ov0 = document.querySelector('.cvov'); if (ov0) { URL.revokeObjectURL(ov0.getAttribute('data-url')); ov0.remove(); } return;
       case 'card':
         var ci = v.indexOf(':'), kind = v.slice(0, ci), cid = v.slice(ci + 1), ct;
-        if (cid.indexOf('sk|') === 0) { var sp = cid.split('|'); ct = { date: sp[1], schipper: sp.slice(2).join('|'), name: '' }; }
-        else ct = findItem(cid);
+        ct = cardItem(cid);
         if (!ct || ct.kind === 'alf') return;
         if (!S.mobile) { desktopCard(ct, cid, kind); return; }
         if (READY && READY.id === cid && READY.kind === kind) { shareCard(READY, false); return; }
@@ -2184,7 +2228,7 @@ body{padding-top:env(safe-area-inset-top)}
     var f = {
       datum: el.datum.value, start: el.start.value, end: el.end.value, naam: el.naam.value.trim(), tel: el.tel.value.trim(),
       pax: el.pax.value, drank: el.drank.value, hapjes: el.hapjes.value.trim(), opstap: locVal(el, 'opstap'), afstap: locVal(el, 'afstap'),
-      boot: el.boot.value, schipper: el.schipper.value, status: el.status.value, notes: el.notes.value.trim(), en: el.en.checked, betaald: !!(el.betaald && el.betaald.checked)
+      boot: el.boot.value, schipper: el.schipper.value, host: el.host ? el.host.value : undefined, status: el.status.value, notes: el.notes.value.trim(), en: el.en.checked, betaald: !!(el.betaald && el.betaald.checked)
     };
     var problem = !f.datum ? 'Kies een datum.' : (!f.naam ? 'Vul de naam van de klant in.' : (!f.start ? 'Vul een begintijd in.' : ''));
     if (problem) { showFormErr(problem); return; }
@@ -2232,6 +2276,7 @@ body{padding-top:env(safe-area-inset-top)}
         if ((t.opstap || '') !== (f.opstap || '')) miss.push('opstap');
         if ((t.afstap || '') !== (f.afstap || '')) miss.push('afstap');
         if ((t.schipper || '').toLowerCase() !== (f.schipper || '').toLowerCase()) miss.push('schipper');
+        if (f.host !== undefined && (t.host || '').toLowerCase() !== (f.host || '').toLowerCase()) miss.push('host');
         if ((t.start || '') !== (f.start || '')) miss.push('tijd');
         if (t.naamRaw.toLowerCase().indexOf(f.naam.toLowerCase()) < 0) miss.push('klant');
       }
