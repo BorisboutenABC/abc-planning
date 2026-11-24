@@ -1830,7 +1830,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '31';
+  var APP_VERSION = '32';
   var SWIPE_IN = '', SWIPE_DAY = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -2196,21 +2196,24 @@ body{padding-top:env(safe-area-inset-top)}
     var fail = function (err) { SAVING = false; showFormErr((err && err.message) || String(err)); };
     if (!ABC.authValid()) { fail(new Error('Je bent uitgelogd. Tik bovenaan op "Inloggen met Google" en sla daarna opnieuw op.')); return; }
     step('Opslaan…');
-    timed(rpc('saveTrip', [f]), 45000)
+    // de verse planning komt in hetzelfde antwoord mee (één verzoek i.p.v. twee)
+    var gs0 = grStart(f.datum), rng0 = [gs0, add(gs0, 41)];
+    timed(rpc('saveTrip', [f, rng0]), 45000)
       .catch(function (err) {
         // regels verschoven (bijv. door de Trytn-koppeling)? Tocht opnieuw opzoeken en nog één keer proberen.
         if (ed && /intussen/i.test((err && err.message) || '')) {
           step('Tocht opnieuw zoeken…');
           return freshRow(ed).then(function (row) {
             f.id = row.id; f.origKlant = row.klantRaw; step('Opslaan…');
-            return timed(rpc('saveTrip', [f]), 45000);
+            return timed(rpc('saveTrip', [f, rng0]), 45000);
           });
         }
         throw err;
       })
       .then(function (res) {
-        step('Controleren…');
         var gs = grStart(res.datum);
+        if (res.data && gs === gs0) return { res: res, d: res.data, gs: gs };
+        step('Controleren…');
         return timed(rpc('getData', [gs, add(gs, 41)]), 45000).then(function (d) { return { res: res, d: d, gs: gs }; });
       })
       .then(function (r) {
