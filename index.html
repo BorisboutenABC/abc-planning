@@ -110,6 +110,8 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .tc-sub{font-size:13px;color:var(--mut);margin-top:2px}
 .tc-sk{font-size:13px;font-weight:600;color:var(--ink);margin-top:4px}
 .tc-sk.miss{color:#8A2A1C}
+.wline{font-size:12px;color:#2F5E8E;margin-top:2px}
+.wline.hi{color:#8A2A1C;font-weight:600}
 .flags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .chip{border-radius:999px;padding:3px 8px;font-size:11px;font-weight:600;white-space:nowrap}
 .alfc{display:block;width:100%;text-align:left;border:2px solid transparent;border-radius:18px;padding:14px;background:#EEF0FB;color:#2E3A86}
@@ -801,6 +803,24 @@ body{padding-top:env(safe-area-inset-top)}
     var txt = w.t + '°' + (w.p ? ' · ' + w.p + '% regen' : ' · droog') + (w.wind ? ' · windstoten ' + Math.round(w.g) : '');
     return '<span class="wx' + (w.rain || w.wind ? ' rain' : '') + '">' + wxIcon(w.code, 13) + esc(txt) + '</span>';
   }
+  /* waterstand grachten (GrachtAlert, Surinamekade) — alleen de actuele meting, dus alleen bij vandaag */
+  function waterNow(date) {
+    var w = DATA && DATA.raw.waterstand;
+    if (!w || w.error || w.waarde == null || isNaN(w.waarde) || date !== todayIso()) return null;
+    return w;
+  }
+  function waterText(date) {
+    var w = waterNow(date); if (!w) return '';
+    var v = Math.round(w.waarde), d = v - (-40);
+    var tm = '', dt = new Date(w.tijdstip || '');
+    if (!isNaN(dt)) try { tm = dt.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' }); } catch (e) { /* */ }
+    return 'Waterstand ' + (v > 0 ? '+' : '') + v + ' cm NAP (' + (d === 0 ? 'normaal' : Math.abs(d) + ' cm ' + (d > 0 ? 'hoger' : 'lager') + ' dan normaal') + ')' + (tm ? ' · gemeten ' + tm : '');
+  }
+  function waterHtml(date) {
+    var t = waterText(date); if (!t) return '';
+    var w = waterNow(date), d = Math.round(w.waarde) + 40;
+    return '<div class="wline' + (Math.abs(d) >= 10 ? ' hi' : '') + '">💧 ' + esc(t) + '</div>';
+  }
   function wxTripText(t) {
     var w = wxTrip(t);
     if (!w) return 'Nog geen verwachting (meer dan 16 dagen vooruit)';
@@ -920,7 +940,8 @@ body{padding-top:env(safe-area-inset-top)}
       c.font = '500 32px ' + IT;
       var notes = !A && t.notes ? wrapText(c, t.notes.replace(/^OPTIE\s*·?\s*/i, 'Optie · '), CW - 56) : [];
       var wx = A ? null : wxTrip(t), wxTxt = wx ? 'Weer: ' + wxTripText(t) : '';
-      var wxLines = wx ? wrapText(c, wxTxt, CW - 56) : [];
+      var wt = waterText(t.date); if (wt) wxTxt = wxTxt ? wxTxt + '\n' + wt : wt;
+      var wxLines = wxTxt ? wrapText(c, wxTxt, CW - 56) : [];
       var h = 40 + 70 + 34;                                   // tijd + lijn
       rowLines.forEach(function (ls) { h += ls.length * 46 + 26; });
       if (notes.length) h += 30 + 44 + notes.length * 44 + 34;
@@ -969,8 +990,9 @@ body{padding-top:env(safe-area-inset-top)}
       }
       if (wxLines.length) {
         var wh = wxLines.length * 42 + 30;
-        rrect(c, CX, yy, CW, wh, 22, wx.rain || wx.wind ? '#E1EBF6' : '#F6F1E9');
-        c.fillStyle = wx.rain || wx.wind ? '#2F5E8E' : '#4A433A'; c.font = '600 30px ' + IT;
+        var alert = wx && (wx.rain || wx.wind);
+        rrect(c, CX, yy, CW, wh, 22, alert ? '#E1EBF6' : '#F6F1E9');
+        c.fillStyle = alert ? '#2F5E8E' : '#4A433A'; c.font = '600 30px ' + IT;
         wxLines.forEach(function (ln, j) { c.fillText(ln, CX + 28, yy + 46 + j * 42); });
         yy += wh;
       }
@@ -1277,8 +1299,9 @@ body{padding-top:env(safe-area-inset-top)}
       list.map(ticketRow).join('') + '</div>';
   }
   var ALF_ST = ['Tickets', 'Privé', 'Vaart niet'], ALF_SAVING = false, ALF_MSG = null;
-  function crewOpts(cur) {
-    var names = (DATA ? DATA.raw.schippers : []).map(function (s) { return s.naam; });
+  function crewOpts(cur, kind) {
+    var src = DATA ? (kind === 'host' && (DATA.raw.hosts || []).length ? DATA.raw.hosts : DATA.raw.schippers) : [];
+    var names = (src || []).map(function (s) { return s.naam; });
     if (cur && names.map(function (x) { return x.toLowerCase(); }).indexOf(cur.toLowerCase()) < 0) names.push(cur);
     return opt('', '—', cur || '') + names.map(function (n) { return opt(n, n, (cur || '').toLowerCase() === n.toLowerCase() ? n : ''); }).join('');
   }
@@ -1292,7 +1315,7 @@ body{padding-top:env(safe-area-inset-top)}
           '<input type="hidden" name="boat' + i + '" value="' + esc(b.boat) + '">' +
           '<div class="acb-g fg"><label><span>Status</span><select name="status' + i + '">' + ALF_ST.map(function (x) { return opt(x, x, st); }).join('') + '</select></label>' +
           '<label><span>Schipper</span><select name="schipper' + i + '">' + crewOpts(b.schipper) + '</select></label>' +
-          '<label><span>Host</span><select name="host' + i + '">' + crewOpts(b.host) + '</select></label></div></div>';
+          '<label><span>Host</span><select name="host' + i + '">' + crewOpts(b.host, 'host') + '</select></label></div></div>';
       }).join('') + msg +
       '<button type="submit" class="save"' + (ALF_SAVING ? ' disabled' : '') + '>' + (ALF_SAVING ? 'Opslaan…' : 'Indeling opslaan') + '</button>' +
       (a.booked > 0
@@ -1594,7 +1617,7 @@ body{padding-top:env(safe-area-inset-top)}
         '<div class="dp-right">' + chip(B.short, B.chip) + (wxTrip(x) ? wxTripHtml(x) : '') + '</div></button>';
     }).join('');
     return '<div class="dpov" data-act="closepop" role="dialog" aria-modal="true" aria-label="' + esc(longDate(date)) + '"><div class="dpcard" data-act="noop">' +
-      '<div class="dp-h"><div><h2 class="sg">' + esc(longDate(date)) + '</h2><div class="dp-sub"><span>' + plural(trips.length, 'tocht', 'tochten') + ' · ' + pax + ' gasten</span>' + (wxDay(date) ? wxDayHtml(date, 15) : '') + '</div>' + hostLine(date) + '</div>' +
+      '<div class="dp-h"><div><h2 class="sg">' + esc(longDate(date)) + '</h2><div class="dp-sub"><span>' + plural(trips.length, 'tocht', 'tochten') + ' · ' + pax + ' gasten</span>' + (wxDay(date) ? wxDayHtml(date, 15) : '') + '</div>' + waterHtml(date) + hostLine(date) + '</div>' +
       '<div class="dp-acts"><button class="btn-new" data-act="newon:' + date + '">+ Tocht toevoegen</button><button class="x" data-act="closepop" aria-label="Sluiten">×</button></div></div>' +
       (items.length ? '<div class="tl"><div class="tl-in"><div class="tl-axis">' + axis + '</div>' + rows + '</div></div>' + '<div class="dp-list">' + list + '</div>'
         : '<div class="empty">Geen tochten op deze dag.<br><button class="save" data-act="newon:' + date + '">+ Tocht toevoegen</button></div>') +
@@ -1628,7 +1651,7 @@ body{padding-top:env(safe-area-inset-top)}
     var cols = days.map(function (d) {
       var items = DATA ? dayItems(d) : [];
       return '<div class="wday' + (dow(d) >= 5 ? ' we' : '') + '"><button class="wday-h' + (d === T ? ' today' : '') + '" data-act="day:' + d + '"><span class="d">' + cap(NL_DOW[dow(d)]) + '</span><span class="n">' + dn(d) + ' ' + NL_MON_S[mi(d)] + '</span></button>' +
-        (wxDay(d) ? '<div class="wday-wx">' + wxDayHtml(d) + '</div>' : '') +
+        (wxDay(d) ? '<div class="wday-wx">' + wxDayHtml(d) + '</div>' : '') + waterHtml(d) +
         (!items.length ? '<button class="noday" style="border:0;background:transparent;text-align:left;cursor:pointer" data-act="newon:' + d + '">Geen tochten · + toevoegen</button>' : '') +
         items.map(function (t) {
           if (t.kind === 'alf') return walfCard(t);
@@ -1711,6 +1734,7 @@ body{padding-top:env(safe-area-inset-top)}
       body = strip + '<div class="mswipe mdaybox' + (SWIPE_DAY ? ' in-' + SWIPE_DAY : '') + '" data-swipe="day" style="display:flex;flex-direction:column;gap:14px">' +
         '<div class="mday-h"><h2 class="sg">' + esc(dayMonth(cur)) + '</h2><span class="m12">' + plural(trips.length, 'tocht', 'tochten') + ' · ' + pax + ' gasten</span></div>' +
         (wxDay(cur) ? '<div style="margin-top:-6px">' + wxDayHtml(cur, 15) + (wxDay(cur).tmin != null ? '<span class="wx"> · min ' + Math.round(wxDay(cur).tmin) + '°' + (wxDay(cur).gust >= 50 ? ' · windstoten ' + Math.round(wxDay(cur).gust) + ' km/u' : '') + '</span>' : '') + '</div>' : '') +
+        (waterHtml(cur) ? '<div style="margin-top:-8px">' + waterHtml(cur) + '</div>' : '') +
         (!items.length ? '<div class="empty" style="background:var(--card)">Geen tochten op deze dag.<br><button class="save" data-act="newon:' + cur + '">+ Tocht toevoegen</button></div>' : '') +
         hostBlock(cur) +
         items.map(function (x) { return x.kind === 'alf' ? alfCard(x) : tripCard(x); }).join('') + '</div>' +
@@ -1739,7 +1763,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '27';
+  var APP_VERSION = '28';
   var SWIPE_IN = '', SWIPE_DAY = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
