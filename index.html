@@ -111,7 +111,14 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .tc-sk{font-size:13px;font-weight:600;color:var(--ink);margin-top:4px}
 .tc-sk.miss{color:#8A2A1C}
 .wline{display:block;font-size:12px;color:#2F5E8E;margin-top:2px;text-decoration:none}
-.wline.hi{color:#8A2A1C;font-weight:600}
+.wline.hi{color:#8A2A1C;font-weight:700;background:#FBE3DF;border-radius:10px;padding:6px 10px;margin-top:4px}
+.wline.mid{color:#7A4508;font-weight:600;background:#FDEBD3;border-radius:10px;padding:6px 10px;margin-top:4px}
+.cvov{position:fixed;inset:0;background:rgba(30,27,22,.6);z-index:60;display:flex;flex-direction:column;align-items:center;padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom))}
+.cvbar{display:flex;gap:8px;width:100%;max-width:560px;margin-bottom:10px}
+.cvbar button{flex:1;border:0;border-radius:14px;padding:12px;font:700 14px Inter,system-ui,sans-serif}
+.cvimg{flex:1;overflow:auto;width:100%;max-width:560px;border-radius:14px;-webkit-overflow-scrolling:touch}
+.cvimg img{width:100%;display:block;border-radius:14px}
+.abtns{display:flex;gap:8px}.abtns .abtn{flex:1}
 .flags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .chip{border-radius:999px;padding:3px 8px;font-size:11px;font-weight:600;white-space:nowrap}
 .alfc{display:block;width:100%;text-align:left;border:2px solid transparent;border-radius:18px;padding:14px;background:#EEF0FB;color:#2E3A86}
@@ -826,7 +833,9 @@ body{padding-top:env(safe-area-inset-top)}
   function waterHtml(date) {
     var t = waterText(date); if (!t) return '';
     var w = waterNow(date), d = Math.round(w.waarde) + 40;
-    return '<a class="wline' + (Math.abs(d) >= 10 ? ' hi' : '') + '" href="' + WATER_URL + '" target="_blank" rel="noopener">💧 ' + esc(t) + ' ›</a>';
+    var cls = d >= 10 ? ' hi' : (d >= 5 || d <= -10 ? ' mid' : '');
+    if (d >= 10) t = '⚠ Hoog water · ' + t;
+    return '<a class="wline' + cls + '" href="' + WATER_URL + '" target="_blank" rel="noopener">💧 ' + esc(t) + ' ›</a>';
   }
   function wxTripText(t) {
     var w = wxTrip(t);
@@ -877,7 +886,8 @@ body{padding-top:env(safe-area-inset-top)}
       if (sk && !/vaart niet|priv/i.test(b.status || a.status || '') && seen.indexOf(sk) < 0) seen.push(sk);
     });
     return seen.map(function (sk) {
-      return '<button class="abtn ghost" style="width:100%" data-act="card:pdf:sk|' + esc(a.date) + '|' + esc(sk) + '">Vaarkaart ' + esc(proper(sk)) + (S.mobile ? ' (PDF) delen' : ' via WhatsApp') + '</button>';
+      var id = 'sk|' + a.date + '|' + sk;
+      return '<div class="abtns"><button class="abtn ghost" data-act="cardview:' + esc(id) + '">Vaarkaart ' + esc(proper(sk)) + ' bekijken</button><button class="abtn ghost" data-act="card:pdf:' + esc(id) + '">' + (S.mobile ? 'Delen' : 'Via WhatsApp') + '</button></div>';
     }).join('');
   }
   function wrapText(c, text, maxW) {
@@ -1069,6 +1079,17 @@ body{padding-top:env(safe-area-inset-top)}
   }
   /* laptop: vaarkaart als afbeelding naar het klembord en WhatsApp (app) openen bij de schipper met de tekst erin.
      De klembord-actie moet direct in de klik starten, daarom krijgt ClipboardItem een belofte (Promise) mee. */
+  /* voorbeeld van de vaarkaart in een venster, met knoppen om te sluiten of meteen te versturen */
+  function showCardPreview(f, id) {
+    var old = document.querySelector('.cvov'); if (old) old.remove();
+    var url = URL.createObjectURL(f.png), ov = document.createElement('div');
+    ov.className = 'cvov'; ov.setAttribute('data-url', url);
+    ov.innerHTML = '<div class="cvbar"><button data-act="cvclose" style="background:var(--card);color:var(--ink)">Sluiten</button>' +
+      '<button data-act="card:pdf:' + esc(id) + '" style="background:var(--zaza);color:#fff">' + (S.mobile ? 'Delen' : 'Via WhatsApp') + '</button></div>' +
+      '<div class="cvimg"><img alt="Voorbeeld vaarkaart" src="' + url + '"></div>';
+    ov.addEventListener('click', function (e) { if (e.target === ov) act('cvclose'); });
+    document.body.appendChild(ov);
+  }
   function desktopCard(ct, cid, kind) {
     var R = { id: cid, kind: kind }, b = cardBtn(R);
     if (b) b.textContent = 'Vaarkaart maken…';
@@ -1121,7 +1142,7 @@ body{padding-top:env(safe-area-inset-top)}
     });
   }
   function cardButtons(t) {
-    return '<button class="abtn ghost" style="width:100%" data-act="card:pdf:' + esc(t.id) + '">' + (S.mobile ? 'Vaarkaart (PDF) delen' : 'Vaarkaart via WhatsApp') + '</button>';
+    return '<div class="abtns"><button class="abtn ghost" data-act="cardview:' + esc(t.id) + '">Vaarkaart bekijken</button><button class="abtn ghost" data-act="card:pdf:' + esc(t.id) + '">' + (S.mobile ? 'Vaarkaart delen' : 'Via WhatsApp') + '</button></div>';
   }
 
   /* ---------- todo's ---------- */
@@ -1809,7 +1830,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '30';
+  var APP_VERSION = '31';
   var SWIPE_IN = '', SWIPE_DAY = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -1900,6 +1921,13 @@ body{padding-top:env(safe-area-inset-top)}
     var i = a.indexOf(':'), k = i < 0 ? a : a.slice(0, i), v = i < 0 ? '' : a.slice(i + 1);
     switch (k) {
       case 'noop': return;
+      case 'cardview':
+        var vt = v.indexOf('sk|') === 0 ? (function (sp) { return { date: sp[1], schipper: sp.slice(2).join('|'), name: '' }; })(v.split('|')) : findItem(v);
+        if (!vt || vt.kind === 'alf') return;
+        toast('Voorbeeld maken…');
+        cardFiles(vt).then(function (f) { showCardPreview(f, v); }, function (e) { toast((e && e.message) || 'Vaarkaart maken is niet gelukt.'); });
+        return;
+      case 'cvclose': var ov0 = document.querySelector('.cvov'); if (ov0) { URL.revokeObjectURL(ov0.getAttribute('data-url')); ov0.remove(); } return;
       case 'card':
         var ci = v.indexOf(':'), kind = v.slice(0, ci), cid = v.slice(ci + 1), ct;
         if (cid.indexOf('sk|') === 0) { var sp = cid.split('|'); ct = { date: sp[1], schipper: sp.slice(2).join('|'), name: '' }; }
@@ -2031,7 +2059,7 @@ body{padding-top:env(safe-area-inset-top)}
 
   /* ---------- vegen op de telefoon ---------- */
   var TS = null, NOCLICK = 0;
-  function swipeOk() { return S.mobile && S.panel !== 'form' && !S.sel && !document.querySelector('.ov,.dpov'); }
+  function swipeOk() { return S.mobile && S.panel !== 'form' && !S.sel && !document.querySelector('.ov,.dpov,.cvov'); }
   function pullTip(txt, y) {
     var t = document.querySelector('.mpull');
     if (!txt) { if (t) t.remove(); return; }
