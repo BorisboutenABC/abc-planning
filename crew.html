@@ -64,6 +64,10 @@ main{padding:16px 20px calc(env(safe-area-inset-bottom) + 40px);max-width:980px;
 .en{background:#E3E6FA;color:var(--alf)}
 .alert{background:#FBE3DF;color:#9A2B1E}
 .ga{flex:none;display:flex;flex-direction:column;gap:8px;justify-content:center;padding:10px 14px 10px 0}
+.tel{min-width:150px;height:48px;padding:0 16px;border-radius:14px;background:#EEF0FB;color:var(--alf);font-weight:700;font-size:15px;white-space:nowrap}
+.tel.on{background:var(--ink);color:#fff;font-size:19px;letter-spacing:.02em;-webkit-user-select:text;user-select:text}
+.tg .tel{height:40px;min-width:0;font-size:14px}
+.tg .tel.on{font-size:17px}
 .ga a{display:flex;align-items:center;justify-content:center;width:64px;height:40px;border-radius:12px;background:#EEF0FB;color:var(--alf);font-weight:700;font-size:13px;text-decoration:none}
 .ga a.wa{background:#DDF1E3;color:#2E5B3C}
 h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:26px 0 10px}
@@ -108,6 +112,8 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
     if (/^06\d{8}$/.test(d)) return '31' + d.slice(1);
     return d;
   }
+  var SHOWTEL = {};
+  function prettyTel(t) { var s = String(t || '').trim(); if (/^\d{6,}$/.test(s) && s.length >= 10) return '+' + s; return s; }
   function startOf(shift) { var m = /(\d{1,2})[:.](\d{2})/.exec(shift || ''); return m ? pad(m[1]) + ':' + m[2] : ''; }
   function mins(hhmm) { return +hhmm.slice(0, 2) * 60 + +hhmm.slice(3, 5); }
 
@@ -123,11 +129,15 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
   function load() {
     if (!KEY) { render(); return; }
     var date = S.date;
-    S.loading = true; render();
+    if (S.loading === date) return;
+    S.loading = date; render();
     call('crewList', [date]).then(function (d) {
+      ls('data_' + date, d);
       if (date !== S.date) return;
       S.loading = false; S.err = ''; S.online = true;
-      S.data = d; ls('data_' + date, d); render();
+      var same = S.data && JSON.stringify(S.data.guests) === JSON.stringify(d.guests) && JSON.stringify(S.data.trips) === JSON.stringify(d.trips) && JSON.stringify(S.data.shifts) === JSON.stringify(d.shifts);
+      S.data = d; render();
+      if (!PREF[date]) { PREF[date] = 1; prefetch(addDays(date, 1)); }
     }, function (e) {
       S.loading = false;
       if (e.auth) S.err = e.message + ' Vraag Boris om een nieuwe link.';
@@ -136,6 +146,12 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
     });
   }
 
+  var PREF = {};
+  function prefetch(date) {
+    var c = ls('data_' + date);
+    if (c && c.updated && Date.now() - new Date(c.updated).getTime() < 10 * 60e3) return;
+    call('crewList', [date]).then(function (d) { ls('data_' + date, d); }, function () {});
+  }
   function flush() {
     var rows = Object.keys(PENDING);
     if (!rows.length || !KEY) return;
@@ -196,7 +212,7 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
       (g.opstap ? '<span class="chip alert">Opstap: ' + esc(g.opstap) + '</span>' : '') +
       (g.boot ? '<span>· boot ' + esc(g.boot) + '</span>' : '') +
       '</div></div>' +
-      (t ? '<div class="ga"><a href="tel:+' + esc(t) + '">Bel</a><a class="wa" href="https://wa.me/' + esc(t) + '" target="_blank" rel="noopener">App</a></div>' : '') +
+      (g.telefoon ? '<div class="ga">' + (SHOWTEL['g' + g.row] ? '<button class="tel on" data-tel="g' + esc(g.row) + '">' + esc(prettyTel(g.telefoon)) + '</button>' : '<button class="tel" data-tel="g' + esc(g.row) + '">Toon nummer</button>') + '</div>' : '') +
       '</div>';
   }
 
@@ -208,7 +224,7 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
       f('Gasten', esc(t.pax || '—')) +
       f('Boot', esc(t.boot === 'zaza' ? 'Zaza' : t.boot === 'mosi' ? 'Mosi Jo' : 'nog niet bekend')) +
       f('Opstap', esc(t.opstap || '—')) + f('Afstap', esc(t.afstap || '—')) +
-      f('Telefoon', p ? '<a href="tel:+' + esc(p) + '">+' + esc(p) + '</a> · <a href="https://wa.me/' + esc(p) + '" target="_blank" rel="noopener">WhatsApp</a>' : '—') +
+      f('Telefoon', t.telefoon ? (SHOWTEL['t' + t.naam + t.start] ? '<button class="tel on" data-tel="t' + esc(t.naam + t.start) + '">' + esc(prettyTel(t.telefoon)) + '</button>' : '<button class="tel" data-tel="t' + esc(t.naam + t.start) + '">Toon nummer</button>') : '—') +
       f('Schipper', esc(t.schipper || '—')) + f('Drank', esc(t.drank || '—')) + f('Hapjes', esc(t.hapjes || '—')) +
       (t.status && t.status !== 'Bevestigd' ? f('Status', esc(t.status)) : '') +
       '</div>' + (t.notes ? '<div class="tn">' + esc(t.notes) + '</div>' : '') + '</div>';
@@ -264,6 +280,8 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
   }
 
   document.addEventListener('click', function (e) {
+    var tl = e.target.closest('[data-tel]');
+    if (tl) { var k = tl.getAttribute('data-tel'); SHOWTEL[k] = !SHOWTEL[k]; render(); return; }
     var t = e.target.closest('[data-row],[data-go],[data-shift],[data-hide]');
     if (!t) return;
     if (t.hasAttribute('data-row')) { if (e.target.closest('a')) return; toggle(t.getAttribute('data-row')); }
