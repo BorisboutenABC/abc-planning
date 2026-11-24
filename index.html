@@ -1830,7 +1830,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '32';
+  var APP_VERSION = '33';
   var SWIPE_IN = '', SWIPE_DAY = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -1904,11 +1904,11 @@ body{padding-top:env(safe-area-inset-top)}
       '<p style="font-size:12px">Alleen accounts met toegang tot de planning-sheet kunnen de planning zien.</p></div></div>';
   }
   var toastTimer = null;
-  function toast(msg) {
+  function toast(msg, ms) {
     var el = document.getElementById('toast');
     el.textContent = msg; el.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2600);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, ms || 2600);
   }
 
   /* ---------- acties ---------- */
@@ -2196,49 +2196,56 @@ body{padding-top:env(safe-area-inset-top)}
     var fail = function (err) { SAVING = false; showFormErr((err && err.message) || String(err)); };
     if (!ABC.authValid()) { fail(new Error('Je bent uitgelogd. Tik bovenaan op "Inloggen met Google" en sla daarna opnieuw op.')); return; }
     step('Opslaan…');
-    // de verse planning komt in hetzelfde antwoord mee (één verzoek i.p.v. twee)
-    var gs0 = grStart(f.datum), rng0 = [gs0, add(gs0, 41)];
-    timed(rpc('saveTrip', [f, rng0]), 45000)
+    // Opslaan wacht alleen op de sheet zelf; het controleren en verversen gebeurt daarna op de achtergrond.
+    timed(rpc('saveTrip', [f]), 45000)
       .catch(function (err) {
         // regels verschoven (bijv. door de Trytn-koppeling)? Tocht opnieuw opzoeken en nog één keer proberen.
         if (ed && /intussen/i.test((err && err.message) || '')) {
           step('Tocht opnieuw zoeken…');
           return freshRow(ed).then(function (row) {
             f.id = row.id; f.origKlant = row.klantRaw; step('Opslaan…');
-            return timed(rpc('saveTrip', [f, rng0]), 45000);
+            return timed(rpc('saveTrip', [f]), 45000);
           });
         }
         throw err;
       })
       .then(function (res) {
-        var gs = grStart(res.datum);
-        if (res.data && gs === gs0) return { res: res, d: res.data, gs: gs };
-        step('Controleren…');
-        return timed(rpc('getData', [gs, add(gs, 41)]), 45000).then(function (d) { return { res: res, d: d, gs: gs }; });
-      })
-      .then(function (r) {
-        // de verse planning meteen gebruiken (geen oude kopie meer tonen)
-        var fresh = prep(r.d);
-        CACHE = {}; CACHE[r.gs] = fresh; LOADED_AT = Date.now();
-        try { localStorage.setItem('abc_' + r.gs, JSON.stringify(r.d)); } catch (x) { /* */ }
-        var t = fresh.trips.filter(function (x) { return x.id === r.res.id; })[0], miss = [];
-        if (!t) miss.push('de tocht zelf');
-        else {
-          if ((t.opstap || '') !== (f.opstap || '')) miss.push('opstap');
-          if ((t.afstap || '') !== (f.afstap || '')) miss.push('afstap');
-          if ((t.schipper || '').toLowerCase() !== (f.schipper || '').toLowerCase()) miss.push('schipper');
-          if ((t.start || '') !== (f.start || '')) miss.push('tijd');
-          if (t.naamRaw.toLowerCase().indexOf(f.naam.toLowerCase()) < 0) miss.push('klant');
-        }
         SAVING = false;
-        if (miss.length) { showFormErr('Niet alles is goed opgeslagen (' + miss.join(', ') + '). Probeer het opnieuw of pas het aan in de sheet.'); return; }
-        S.panel = null; S.editing = null; FORM_ERR = null;
-        S.anchor = r.res.datum; S.sel = r.res.id; DATA = fresh; ERR = null;
-        render();
-        toast('Opgeslagen en gecontroleerd in de sheet');
+        S.panel = null; S.editing = null; FORM_ERR = null; S.sel = null;
+        S.anchor = res.datum;
+        var gs = grStart(res.datum);
+        LOADING = true; render();
+        toast('Opgeslagen');
+        verifySaved(f, res, gs, 0);
       })
       .catch(fail);
   });
+  /* controle op de achtergrond: staat alles echt zo in de sheet? */
+  function verifySaved(f, res, gs, tries) {
+    timed(rpc('getData', [gs, add(gs, 41)]), 45000).then(function (d) {
+      var fresh = prep(d);
+      CACHE = {}; CACHE[gs] = fresh; LOADED_AT = Date.now();
+      try { localStorage.setItem('abc_' + gs, JSON.stringify(d)); } catch (x) { /* */ }
+      var t = fresh.trips.filter(function (x) { return x.id === res.id; })[0], miss = [];
+      if (!t) miss.push('de tocht zelf');
+      else {
+        if ((t.opstap || '') !== (f.opstap || '')) miss.push('opstap');
+        if ((t.afstap || '') !== (f.afstap || '')) miss.push('afstap');
+        if ((t.schipper || '').toLowerCase() !== (f.schipper || '').toLowerCase()) miss.push('schipper');
+        if ((t.start || '') !== (f.start || '')) miss.push('tijd');
+        if (t.naamRaw.toLowerCase().indexOf(f.naam.toLowerCase()) < 0) miss.push('klant');
+      }
+      LOADING = false; ERR = null;
+      if (grStart(S.anchor) === gs) DATA = fresh;
+      if (S.panel !== 'form') render();
+      if (miss.length) toast('Let op: bij ' + f.naam + ' is niet alles goed opgeslagen (' + miss.join(', ') + '). Controleer de tocht.', 9000);
+      else toast('Opgeslagen en gecontroleerd in de sheet');
+    }, function () {
+      if (tries < 1) { setTimeout(function () { verifySaved(f, res, gs, tries + 1); }, 3000); return; }
+      LOADING = false; if (S.panel !== 'form') render();
+      toast('Opgeslagen, maar controleren lukte niet. Ververs de planning even.', 7000);
+    });
+  }
   function timed(pr, ms) {
     return new Promise(function (resolve, reject) {
       var tm = setTimeout(function () { reject(new Error('Google reageert niet (na ' + Math.round(ms / 1000) + ' seconden). Controleer je internet en probeer het opnieuw; kijk eventueel eerst in de sheet of het toch is opgeslagen.')); }, ms);
