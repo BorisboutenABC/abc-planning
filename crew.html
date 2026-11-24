@@ -40,10 +40,6 @@ main{padding:16px 20px calc(env(safe-area-inset-bottom) + 40px);max-width:980px;
 .search{flex:1;height:52px;border-radius:16px;border:1px solid var(--line);background:var(--card);padding:0 16px;font-size:18px;-webkit-user-select:text;user-select:text}
 .tgl{height:52px;padding:0 14px;border-radius:16px;background:var(--card);border:1px solid var(--line);font-weight:600;font-size:14px}
 .tgl.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.crewl{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.crewl>div{flex:1;min-width:220px;background:#E4F0F0;border-radius:14px;padding:10px 14px;font-size:14px}
-.crewl>div.off{background:#EFE8DD;color:var(--mut)}
-.crewl b{display:block;font-size:16px;margin-bottom:2px}
 .sum{display:flex;gap:10px;margin-bottom:12px}
 .sum>div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
 .sum b{font-size:24px;display:block}
@@ -71,11 +67,16 @@ main{padding:16px 20px calc(env(safe-area-inset-bottom) + 40px);max-width:980px;
 .ga a{display:flex;align-items:center;justify-content:center;width:64px;height:40px;border-radius:12px;background:#EEF0FB;color:var(--alf);font-weight:700;font-size:13px;text-decoration:none}
 .ga a.wa{background:#DDF1E3;color:#2E5B3C}
 h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:26px 0 10px}
-.trip{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--zaza);border-radius:18px;padding:14px 16px;margin-bottom:10px}
+.trip{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--zaza);border-radius:14px;padding:10px 14px;margin-bottom:8px}
 .trip.mosi{border-left-color:var(--mosi)}
-.th{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
-.th b{font-size:19px}
-.th span{font-size:15px;font-weight:700;white-space:nowrap}
+.th{display:flex;gap:12px;align-items:center;list-style:none;cursor:pointer}
+.th::-webkit-details-marker{display:none}
+.th .tt{font-weight:700;font-size:15px;white-space:nowrap;min-width:110px}
+.th b{flex:1;font-size:16px}
+.th i{font-style:normal;font-size:13px;color:var(--mut)}
+.th em{font-style:normal;color:var(--mut);transition:transform .15s}
+.trip[open] .th em{transform:rotate(90deg)}
+.trip[open] .th{padding-bottom:6px;border-bottom:1px solid var(--line)}
 .tg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px;margin-top:10px;font-size:15px}
 .tg div span{display:block;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--mut);text-transform:uppercase}
 .tg a{color:var(--alf);font-weight:700;text-decoration:none}
@@ -112,7 +113,7 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
     if (/^06\d{8}$/.test(d)) return '31' + d.slice(1);
     return d;
   }
-  var SHOWTEL = {};
+  var SHOWTEL = {}, OPENTRIP = {};
   function prettyTel(t) { var s = String(t || '').trim(); if (/^\d{6,}$/.test(s) && s.length >= 10) return '+' + s; return s; }
   function startOf(shift) { var m = /(\d{1,2})[:.](\d{2})/.exec(shift || ''); return m ? pad(m[1]) + ':' + m[2] : ''; }
   function mins(hhmm) { return +hhmm.slice(0, 2) * 60 + +hhmm.slice(3, 5); }
@@ -219,7 +220,8 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
   function tripCard(t) {
     var p = tel(t.telefoon);
     var f = function (l, v) { return v ? '<div><span>' + l + '</span>' + v + '</div>' : ''; };
-    return '<div class="trip' + (t.boot === 'mosi' ? ' mosi' : '') + '"><div class="th"><b>' + esc(t.naam) + '</b><span>' + esc(t.tijd || t.start || '') + '</span></div>' +
+    var key = t.naam + t.start;
+    return '<details class="trip' + (t.boot === 'mosi' ? ' mosi' : '') + '" data-trip="' + esc(key) + '"' + (OPENTRIP[key] ? ' open' : '') + '><summary class="th"><span class="tt">' + esc(t.tijd || t.start || '') + '</span><b>' + esc(t.naam) + '</b><i>' + esc(t.pax ? t.pax + ' pax' : '') + '</i><em>▸</em></summary>' +
       '<div class="tg">' +
       f('Gasten', esc(t.pax || '—')) +
       f('Boot', esc(t.boot === 'zaza' ? 'Zaza' : t.boot === 'mosi' ? 'Mosi Jo' : 'nog niet bekend')) +
@@ -227,7 +229,7 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
       f('Telefoon', t.telefoon ? (SHOWTEL['t' + t.naam + t.start] ? '<button class="tel on" data-tel="t' + esc(t.naam + t.start) + '">' + esc(prettyTel(t.telefoon)) + '</button>' : '<button class="tel" data-tel="t' + esc(t.naam + t.start) + '">Toon nummer</button>') : '—') +
       f('Schipper', esc(t.schipper || '—')) + f('Drank', esc(t.drank || '—')) + f('Hapjes', esc(t.hapjes || '—')) +
       (t.status && t.status !== 'Bevestigd' ? f('Status', esc(t.status)) : '') +
-      '</div>' + (t.notes ? '<div class="tn">' + esc(t.notes) + '</div>' : '') + '</div>';
+      '</div>' + (t.notes ? '<div class="tn">' + esc(t.notes) + '</div>' : '') + '</details>';
   }
 
   function render() {
@@ -261,18 +263,13 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
         list.forEach(function (g) { var p = parseInt(g.pax, 10) || 0; pax += p; if (isChecked(g)) { inP += p; nB++; } });
         var q = S.q.trim().toLowerCase();
         var shown = list.filter(function (g) { return (!S.hide || !isChecked(g)) && (!q || (g.naam + ' ' + g.telefoon).toLowerCase().indexOf(q) >= 0); });
-        var sc = ((d.shifts || []).filter(function (x) { return x.shift === cur.key; })[0] || {}).boats || [];
-        if (sc.length) body += '<div class="crewl">' + sc.map(function (b) {
-          var off = /vaart niet|priv/i.test(b.status || '');
-          return '<div' + (off ? ' class="off"' : '') + '><b>' + esc(b.boat) + '</b>' + (off ? '<span>' + esc(b.status) + '</span>' : '<span>Schipper ' + esc(b.schipper || '—') + ' · host ' + esc(b.host || '—') + (b.pax ? ' · ' + b.pax + ' pax' : '') + '</span>') + '</div>';
-        }).join('') + '</div>';
         body += '<div class="sum"><div><b>' + inP + ' / ' + pax + '</b><span>gasten aan boord</span><div class="bar"><i style="width:' + (pax ? Math.round(inP / pax * 100) : 0) + '%"></i></div></div>' +
           '<div><b>' + nB + ' / ' + list.length + '</b><span>boekingen binnen</span></div></div>' +
           '<div class="tools"><input class="search" id="q" type="search" placeholder="Zoek naam…" value="' + esc(S.q) + '" autocomplete="off">' +
           '<button class="tgl' + (S.hide ? ' on' : '') + '" data-hide="1">' + (S.hide ? 'Toon iedereen' : 'Verberg aan boord') + '</button></div>' +
           (shown.length ? shown.map(guestRow).join('') : '<div class="empty">' + (q ? 'Niemand gevonden met "' + esc(S.q) + '".' : 'Iedereen is aan boord.') + '</div>');
       } else body += '<div class="empty">Vandaag geen losse tickets.</div>';
-      if (trips.length) body += '<h2>Privétochten vandaag</h2>' + trips.slice().sort(function (a, b) { return (a.start || '') < (b.start || '') ? -1 : 1; }).map(tripCard).join('');
+      if (trips.length) body += '<h2>Privétochten</h2>' + trips.slice().sort(function (a, b) { return (a.start || '') < (b.start || '') ? -1 : 1; }).map(tripCard).join('');
     }
     var hadFocus = document.activeElement && document.activeElement.id === 'q', pos = hadFocus ? document.activeElement.selectionStart : 0;
     app.innerHTML = hdr + '<main>' + body + '</main>';
@@ -293,6 +290,10 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
     else if (t.hasAttribute('data-shift')) { S.shift = t.getAttribute('data-shift'); S.q = ''; render(); window.scrollTo(0, 0); }
     else if (t.hasAttribute('data-hide')) { S.hide = !S.hide; render(); }
   });
+  document.addEventListener('toggle', function (e) {
+    var k = e.target.getAttribute && e.target.getAttribute('data-trip');
+    if (k != null) { if (e.target.open) OPENTRIP[k] = 1; else delete OPENTRIP[k]; }
+  }, true);
   document.addEventListener('input', function (e) { if (e.target.id === 'q') { S.q = e.target.value; render(); } });
   window.addEventListener('online', function () { S.online = true; flush(); load(); });
   window.addEventListener('offline', function () { S.online = false; render(); });
