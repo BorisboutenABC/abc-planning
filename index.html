@@ -110,7 +110,7 @@ a{color:var(--zaza)}a:hover{color:#133E42}
 .tc-sub{font-size:13px;color:var(--mut);margin-top:2px}
 .tc-sk{font-size:13px;font-weight:600;color:var(--ink);margin-top:4px}
 .tc-sk.miss{color:#8A2A1C}
-.wline{font-size:12px;color:#2F5E8E;margin-top:2px}
+.wline{display:block;font-size:12px;color:#2F5E8E;margin-top:2px;text-decoration:none}
 .wline.hi{color:#8A2A1C;font-weight:600}
 .flags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .chip{border-radius:999px;padding:3px 8px;font-size:11px;font-weight:600;white-space:nowrap}
@@ -603,6 +603,7 @@ body{padding-top:env(safe-area-inset-top)}
 
   /* ---------- WhatsApp (zelfde teksten als de formules in de sheet) ---------- */
   function locLink(n) { return DATA.loc[(n || '').trim().toLowerCase()] || ''; }
+  var WATER_URL = 'https://grachtalert.nl/waterstand/';
   function skTel(n) { return DATA.sk[(n || '').trim().toLowerCase()] || ''; }
   function ddmmyyyy(s) { return s.slice(8, 10) + '-' + s.slice(5, 7) + '-' + s.slice(0, 4); }
   function dagNaam(t) { return (t.dag || NL_DOW[dow(t.date)]).trim(); }
@@ -640,6 +641,7 @@ body{padding-top:env(safe-area-inset-top)}
       '*Bijzonderheden:* ' + t.notes + N + N +
       'Graag 10 minuten van tevoren op de opstaplocatie zijn, zodat je op tijd kunt vertrekken.' + N + N +
       'Na afloop de boot graag schoon en leeg achterlaten en de bar weer aanvullen, zodat alles klaar is voor de volgende groep.' + N + N +
+      '*Waterstand op de dag zelf:* ' + WATER_URL + N + N +
       'Bij vragen kun je ons altijd even een berichtje sturen. Fijne tocht!';
     return 'https://wa.me/' + skTel(sk) + '?text=' + encodeURIComponent(msg);
   }
@@ -824,7 +826,7 @@ body{padding-top:env(safe-area-inset-top)}
   function waterHtml(date) {
     var t = waterText(date); if (!t) return '';
     var w = waterNow(date), d = Math.round(w.waarde) + 40;
-    return '<div class="wline' + (Math.abs(d) >= 10 ? ' hi' : '') + '">💧 ' + esc(t) + '</div>';
+    return '<a class="wline' + (Math.abs(d) >= 10 ? ' hi' : '') + '" href="' + WATER_URL + '" target="_blank" rel="noopener">💧 ' + esc(t) + ' ›</a>';
   }
   function wxTripText(t) {
     var w = wxTrip(t);
@@ -875,7 +877,7 @@ body{padding-top:env(safe-area-inset-top)}
       if (sk && !/vaart niet|priv/i.test(b.status || a.status || '') && seen.indexOf(sk) < 0) seen.push(sk);
     });
     return seen.map(function (sk) {
-      return '<button class="abtn ghost" style="width:100%" data-act="card:pdf:sk|' + esc(a.date) + '|' + esc(sk) + '">Vaarkaart ' + esc(proper(sk)) + ' (PDF) delen</button>';
+      return '<button class="abtn ghost" style="width:100%" data-act="card:pdf:sk|' + esc(a.date) + '|' + esc(sk) + '">Vaarkaart ' + esc(proper(sk)) + (S.mobile ? ' (PDF) delen' : ' via WhatsApp') + '</button>';
     }).join('');
   }
   function wrapText(c, text, maxW) {
@@ -920,16 +922,16 @@ body{padding-top:env(safe-area-inset-top)}
     c.fillText((sk ? 'Schipper: ' + proper(sk) : 'Schipper nog niet ingedeeld') + '  ·  ' + plural(list.length, 'vaart', 'vaarten'), M + 6, y + 100);
     y += 140;
     // waterstand: één keer bovenaan; bij een latere datum de huidige stand met meetmoment
-    var wt = waterText(t0.date, true);
-    if (wt) {
-      if (t0.date !== todayIso()) wt += '. Kijk op de dag zelf even of dit nog klopt.';
-      c.font = '600 30px ' + IT;
-      var wl = wrapText(c, '💧 ' + wt, W - 2 * M - 56), whh = wl.length * 42 + 34;
-      rrect(c, M, y, W - 2 * M, whh, 26, '#E1EBF6');
-      c.fillStyle = '#2F5E8E';
-      wl.forEach(function (ln, j) { c.fillText(ln, M + 28, y + 50 + j * 42); });
-      y += whh + 28;
-    }
+    // waterstand: klikbare link naar GrachtAlert (actueel op de dag zelf)
+    c.font = '700 32px ' + IT;
+    var wlab = 'Check hier de waterstand  ›', wlw = c.measureText(wlab).width;
+    rrect(c, M, y, W - 2 * M, 92, 26, '#E1EBF6');
+    c.fillStyle = '#2F5E8E'; c.font = '600 30px ' + IT; c.fillText('💧', M + 28, y + 58);
+    c.font = '700 32px ' + IT; c.fillStyle = '#1F5E8E'; c.fillText(wlab, M + 78, y + 58);
+    c.fillRect(M + 78, y + 66, wlw, 2);
+    c.fillStyle = '#5A7FA8'; c.font = '500 24px ' + IT; c.textAlign = 'right'; c.fillText('grachtalert.nl', W - M - 28, y + 56); c.textAlign = 'left';
+    links.push({ x: M, y: y, w: W - 2 * M, h: 92, url: WATER_URL });
+    y += 92 + 28;
 
     list.forEach(function (t) {
       var A = t.kind === 'alfcard';
@@ -1055,7 +1057,8 @@ body{padding-top:env(safe-area-inset-top)}
           res({
             pdf: new File([pdf.output('blob')], base + '.pdf', { type: 'application/pdf' }),
             png: new File([png], base + '.png', { type: 'image/png' }),
-            text: (sk ? 'Hey ' + proper(sk) + ', hierbij' : 'Hierbij') + ' de vaarkaart voor ' + longDate(t.date).toLowerCase() + '.'
+            text: (sk ? 'Hey ' + proper(sk) + ', hierbij' : 'Hierbij') + ' de vaarkaart voor ' + longDate(t.date).toLowerCase() + '.\nWaterstand op de dag zelf: ' + WATER_URL,
+            tel: sk ? skTel(sk) : ''
           });
         }, 'image/png');
       });
@@ -1063,6 +1066,34 @@ body{padding-top:env(safe-area-inset-top)}
   }
   function cardBtn(R) {
     return [].slice.call(document.querySelectorAll('[data-act]')).filter(function (b) { return b.getAttribute('data-act') === 'card:' + R.kind + ':' + R.id; })[0];
+  }
+  /* laptop: vaarkaart als afbeelding naar het klembord en WhatsApp (app) openen bij de schipper met de tekst erin.
+     De klembord-actie moet direct in de klik starten, daarom krijgt ClipboardItem een belofte (Promise) mee. */
+  function desktopCard(ct, cid, kind) {
+    var R = { id: cid, kind: kind }, b = cardBtn(R);
+    if (b) b.textContent = 'Vaarkaart maken…';
+    var filesP = cardFiles(ct);
+    var pngP = filesP.then(function (f) { return f.png; });
+    var copied;
+    try {
+      copied = navigator.clipboard && window.ClipboardItem ? navigator.clipboard.write([new ClipboardItem({ 'image/png': pngP })]) : Promise.reject(new Error('geen klembord'));
+    } catch (e) { copied = Promise.reject(e); }
+    Promise.all([filesP, copied.then(function () { return true; }, function () { return false; })]).then(function (r) {
+      var f = r[0], ok = r[1];
+      if (!ok) {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(f.pdf); a.download = f.pdf.name;
+        document.body.appendChild(a); a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+      }
+      var tel = f.tel || '';
+      window.location.href = 'whatsapp://send?' + (tel ? 'phone=' + tel + '&' : '') + 'text=' + encodeURIComponent(f.text);
+      toast(ok ? 'Vaarkaart gekopieerd. Plak hem in WhatsApp met ⌘V en druk op verzenden.' : 'Vaarkaart gedownload. Sleep hem in WhatsApp naar de schipper.');
+      if (b) b.textContent = 'Vaarkaart via WhatsApp';
+    }, function (e) {
+      if (b) b.textContent = 'Vaarkaart via WhatsApp';
+      toast((e && e.message) || 'Vaarkaart maken is niet gelukt.');
+    });
   }
   function shareCard(R, first) {
     var files = [R.file];
@@ -1090,7 +1121,7 @@ body{padding-top:env(safe-area-inset-top)}
     });
   }
   function cardButtons(t) {
-    return '<button class="abtn ghost" style="width:100%" data-act="card:pdf:' + esc(t.id) + '">Vaarkaart (PDF) delen</button>';
+    return '<button class="abtn ghost" style="width:100%" data-act="card:pdf:' + esc(t.id) + '">' + (S.mobile ? 'Vaarkaart (PDF) delen' : 'Vaarkaart via WhatsApp') + '</button>';
   }
 
   /* ---------- todo's ---------- */
@@ -1778,7 +1809,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '29';
+  var APP_VERSION = '30';
   var SWIPE_IN = '', SWIPE_DAY = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -1874,6 +1905,7 @@ body{padding-top:env(safe-area-inset-top)}
         if (cid.indexOf('sk|') === 0) { var sp = cid.split('|'); ct = { date: sp[1], schipper: sp.slice(2).join('|'), name: '' }; }
         else ct = findItem(cid);
         if (!ct || ct.kind === 'alf') return;
+        if (!S.mobile) { desktopCard(ct, cid, kind); return; }
         if (READY && READY.id === cid && READY.kind === kind) { shareCard(READY, false); return; }
         var cb = cardBtn({ id: cid, kind: kind }); if (cb) cb.textContent = 'Vaarkaart maken…';
         cardFiles(ct).then(function (f) {
