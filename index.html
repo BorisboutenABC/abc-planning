@@ -804,17 +804,22 @@ body{padding-top:env(safe-area-inset-top)}
     return '<span class="wx' + (w.rain || w.wind ? ' rain' : '') + '">' + wxIcon(w.code, 13) + esc(txt) + '</span>';
   }
   /* waterstand grachten (GrachtAlert, Surinamekade) — alleen de actuele meting, dus alleen bij vandaag */
-  function waterNow(date) {
+  function waterNow(date, any) {
     var w = DATA && DATA.raw.waterstand;
-    if (!w || w.error || w.waarde == null || isNaN(w.waarde) || date !== todayIso()) return null;
+    if (!w || w.error || w.waarde == null || isNaN(w.waarde) || (!any && date !== todayIso())) return null;
     return w;
   }
-  function waterText(date) {
-    var w = waterNow(date); if (!w) return '';
+  /* any = true: ook voor tochten op een latere dag (vaarkaart), dan als 'huidige waterstand' met meetdatum */
+  function waterText(date, any) {
+    var w = waterNow(date, any); if (!w) return '';
+    var later = date !== todayIso();
     var v = Math.round(w.waarde), d = v - (-40);
     var tm = '', dt = new Date(w.tijdstip || '');
-    if (!isNaN(dt)) try { tm = dt.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' }); } catch (e) { /* */ }
-    return 'Waterstand ' + (v > 0 ? '+' : '') + v + ' cm NAP (' + (d === 0 ? 'normaal' : Math.abs(d) + ' cm ' + (d > 0 ? 'hoger' : 'lager') + ' dan normaal') + ')' + (tm ? ' · gemeten ' + tm : '');
+    if (!isNaN(dt)) try {
+      tm = dt.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
+      if (later) tm = dt.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Amsterdam' }) + ' ' + tm;
+    } catch (e) { /* */ }
+    return (later ? 'Huidige waterstand ' : 'Waterstand ') + (v > 0 ? '+' : '') + v + ' cm NAP (' + (d === 0 ? 'normaal' : Math.abs(d) + ' cm ' + (d > 0 ? 'hoger' : 'lager') + ' dan normaal') + ')' + (tm ? ' · gemeten ' + tm : '');
   }
   function waterHtml(date) {
     var t = waterText(date); if (!t) return '';
@@ -914,6 +919,17 @@ body{padding-top:env(safe-area-inset-top)}
     c.fillStyle = '#6B6257'; c.font = '500 32px ' + IT;
     c.fillText((sk ? 'Schipper: ' + proper(sk) : 'Schipper nog niet ingedeeld') + '  ·  ' + plural(list.length, 'vaart', 'vaarten'), M + 6, y + 100);
     y += 140;
+    // waterstand: één keer bovenaan; bij een latere datum de huidige stand met meetmoment
+    var wt = waterText(t0.date, true);
+    if (wt) {
+      if (t0.date !== todayIso()) wt += '. Kijk op de dag zelf even of dit nog klopt.';
+      c.font = '600 30px ' + IT;
+      var wl = wrapText(c, '💧 ' + wt, W - 2 * M - 56), whh = wl.length * 42 + 34;
+      rrect(c, M, y, W - 2 * M, whh, 26, '#E1EBF6');
+      c.fillStyle = '#2F5E8E';
+      wl.forEach(function (ln, j) { c.fillText(ln, M + 28, y + 50 + j * 42); });
+      y += whh + 28;
+    }
 
     list.forEach(function (t) {
       var A = t.kind === 'alfcard';
@@ -940,7 +956,6 @@ body{padding-top:env(safe-area-inset-top)}
       c.font = '500 32px ' + IT;
       var notes = !A && t.notes ? wrapText(c, t.notes.replace(/^OPTIE\s*·?\s*/i, 'Optie · '), CW - 56) : [];
       var wx = A ? null : wxTrip(t), wxTxt = wx ? 'Weer: ' + wxTripText(t) : '';
-      var wt = waterText(t.date); if (wt) wxTxt = wxTxt ? wxTxt + '\n' + wt : wt;
       var wxLines = wxTxt ? wrapText(c, wxTxt, CW - 56) : [];
       var h = 40 + 70 + 34;                                   // tijd + lijn
       rowLines.forEach(function (ls) { h += ls.length * 46 + 26; });
@@ -1763,7 +1778,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '28';
+  var APP_VERSION = '29';
   var SWIPE_IN = '', SWIPE_DAY = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
