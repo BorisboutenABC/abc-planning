@@ -1493,7 +1493,7 @@ body{padding-top:env(safe-area-inset-top)}
 
   /* ---------- Seizoenscontrole: privévaart overlapt losse tickets (en privé onderling) ---------- */
   var SEASON = null, SEASON_LOADING = false, SEASON_OPEN = false, SEASON_END = '2027-01-31';
-  try { var sz = JSON.parse(localStorage.getItem('abc_season') || 'null'); if (sz && sz.d) SEASON = seasonCheck(sz.d); } catch (e) { /* */ }
+  try { var sz = JSON.parse(localStorage.getItem('abc_season') || 'null'); if (sz && sz.d) { SEASON = seasonCheck(sz.d); SEASON.at = sz.at || 0; } } catch (e) { /* */ }
   function bkey(b) { b = String(b || '').toLowerCase(); return /zaza/.test(b) ? 'zaza' : (/mosi/.test(b) ? 'mosi' : ''); }
   function seasonCheck(d) {
     var T = todayIso(), P = prep(d), out = [];
@@ -1531,7 +1531,7 @@ body{padding-top:env(safe-area-inset-top)}
       SEASON_LOADING = false;
       var was = SEASON ? SEASON.list.length : -1;
       SEASON = seasonCheck(d);
-      try { localStorage.setItem('abc_season', JSON.stringify({ d: d })); } catch (e) { /* */ }
+      try { localStorage.setItem('abc_season', JSON.stringify({ d: d, at: Date.now() })); } catch (e) { /* */ }
       var nAlf = SEASON.list.filter(function (c) { return c.type === 'alf'; }).length;
       if (nAlf && was !== SEASON.list.length) toast('Let op: ' + plural(nAlf, 'overlap', 'overlappen') + ' tussen privévaart en losse tickets');
       render();
@@ -1873,7 +1873,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '35';
+  var APP_VERSION = '36';
   var SWIPE_IN = '', SWIPE_DAY = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
@@ -2286,6 +2286,7 @@ body{padding-top:env(safe-area-inset-top)}
       }
       LOADING = false; ERR = null;
       if (grStart(S.anchor) === gs) DATA = fresh;
+      loadSeason(); // overlapcontrole meteen bijwerken
       if (S.panel !== 'form') render();
       if (miss.length) toast('Let op: bij ' + f.naam + ' is niet alles goed opgeslagen (' + miss.join(', ') + '). Controleer de tocht.', 9000);
       else toast('Opgeslagen en gecontroleerd in de sheet');
