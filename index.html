@@ -1505,12 +1505,16 @@ body{padding-top:env(safe-area-inset-top)}
       if (!tb.length) return;
       var ov = trips.filter(function (t) { var e = t.endMin != null ? t.endMin : t.startMin + 90; return t.date === a.date && t.startMin < aEnd && e > a.startMin; });
       if (!ov.length) return;
-      var free = 2 - ov.length;
+      // alleen boten die écht op Tickets staan tellen; een boot op 'Vaart niet' of 'Privé' is vrij voor privévaart
+      var onTk = {}, used = {};
+      tb.forEach(function (b) { var k = bkey(b.boat); if (k) onTk[k] = 1; });
+      ov.forEach(function (t) { var k = bkey(t.boat); if (k) used[k] = 1; });
+      var free = ['zaza', 'mosi'].filter(function (k) { return !onTk[k] && !used[k]; }).length;
+      var noBoat = ov.filter(function (t) { return !bkey(t.boat); });
       ov.forEach(function (t) {
-        var tk = bkey(t.boat), same = tb.filter(function (b) { return bkey(b.boat) === tk; })[0];
-        var why = '';
-        if (tk && same) why = BOAT[tk].label + ' staat in deze shift nog op Tickets';
-        else if (tb.length > free) why = free <= 0 ? 'geen boot vrij voor losse tickets' : 'beide boten staan op Tickets, er is er maar één vrij';
+        var tk = bkey(t.boat), why = '';
+        if (tk && onTk[tk]) why = BOAT[tk].label + ' staat in deze shift op Tickets';
+        else if (!tk && noBoat.indexOf(t) >= free) why = 'boot nog niet gekozen en er is geen boot vrij';
         if (why) out.push({ type: 'alf', date: a.date, alf: a, trip: t, why: why });
       });
     });
@@ -1869,7 +1873,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '34';
+  var APP_VERSION = '35';
   var SWIPE_IN = '', SWIPE_DAY = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
