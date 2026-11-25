@@ -645,7 +645,7 @@ body{padding-top:env(safe-area-inset-top)}
     }
     return 'https://wa.me/' + t.phone + '?text=' + encodeURIComponent(msg);
   }
-  var HOST_TIPS = 'Zorg dat je een uur van tevoren aanwezig bent.\nLoop de checklist goed na en overleg met de schipper wie wat doet.\nKleed je warm aan en trek daaroverheen de blauwe jas met het ABC-logo.';
+  var HOST_TIPS = 'Zorg dat je een uur van tevoren aanwezig bent bij Museum \'t Kromhout.\nLoop de checklist goed na en overleg met de schipper wie wat doet.\nKleed je warm aan en trek daaroverheen de blauwe jas met het ABC-logo.';
   function waSchipper(t, role) {
     var sk = ((role === 'host' ? t.host : t.schipper) || '').trim(), N = '\n';
     var klant = t.klantRaw.replace(PHONE_G, '').trim() + (t.phone ? ' +' + t.phone : '');
@@ -656,7 +656,7 @@ body{padding-top:env(safe-area-inset-top)}
       '*Bijzonderheden:* ' + t.notes + N + N +
       (role === 'host' ? HOST_TIPS + N + N : 'Graag 10 minuten van tevoren op de opstaplocatie zijn, zodat je op tijd kunt vertrekken.' + N + N) +
       'Na afloop de boot graag schoon en leeg achterlaten en de bar weer aanvullen, zodat alles klaar is voor de volgende groep.' + N + N +
-      '*Waterstand op de dag zelf:* ' + WATER_URL + N + N +
+      (role === 'host' ? 'Zorg na afloop dat alles weer in de lader zit.' + N + N : '*Waterstand op de dag zelf:* ' + WATER_URL + N + N) +
       'Bij vragen kun je ons altijd even een berichtje sturen. Fijne tocht!';
     return 'https://wa.me/' + (role === 'host' ? hostTel(sk) : skTel(sk)) + '?text=' + encodeURIComponent(msg);
   }
@@ -1082,7 +1082,7 @@ body{padding-top:env(safe-area-inset-top)}
           res({
             pdf: new File([pdf.output('blob')], base + '.pdf', { type: 'application/pdf' }),
             png: new File([png], base + '.png', { type: 'image/png' }),
-            text: (sk ? 'Hey ' + proper(sk) + ', hierbij' : 'Hierbij') + ' de vaarkaart voor ' + longDate(t.date).toLowerCase() + '.' + (role === 'host' ? '\n\n' + HOST_TIPS + '\n' : '') + '\nWaterstand op de dag zelf: ' + WATER_URL,
+            text: (sk ? 'Hey ' + proper(sk) + ', hierbij' : 'Hierbij') + ' de vaarkaart voor ' + longDate(t.date).toLowerCase() + '.' + (role === 'host' ? '\n\n' + HOST_TIPS + '\nZorg na afloop dat alles weer in de lader zit.' : '\nWaterstand op de dag zelf: ' + WATER_URL),
             tel: sk ? crewTel(role, sk) : ''
           });
         }, 'image/png');
