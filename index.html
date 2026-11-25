@@ -1408,7 +1408,8 @@ body{padding-top:env(safe-area-inset-top)}
       .replace('laat het ons dan even weten via dit nummer', 'bel of app ons dan even op +31 20 250 4425')
       .replace('let us know via this number', 'call or WhatsApp us on +31 20 250 4425');
     var subj = en ? 'Your Light Festival cruise with Amsterdam Boat Company' : 'Jullie Light Festival rondvaart met Amsterdam Boat Company';
-    return 'mailto:' + encodeURIComponent(String(r.email || '').trim()) + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
+    /* opent een nieuwe mail in Outlook (info@amsterdamboatcompany.com) i.p.v. een mailprogramma op het apparaat */
+    return 'https://outlook.office.com/mail/deeplink/compose?to=' + encodeURIComponent(String(r.email || '').trim()) + '&subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
   }
   function ticketRow(r) {
     var tel = waNum(r.telefoon), en = /EN/.test(r.whatsapp || '') || (!!tel && tel.indexOf('31') !== 0);
@@ -1427,7 +1428,7 @@ body{padding-top:env(safe-area-inset-top)}
     return '<details class="tkr" data-tk="' + esc(key) + '"' + (TK_OPEN[key] ? ' open' : '') + '><summary><span class="n">' + (aan ? '<span style="color:#2E7D4F" title="Aan boord">✓ </span>' : '') + esc(r.naam) + '</span><span class="p">' + esc(r.pax || '?') + ' pax</span>' + platChip(r.platform) + '<span class="ar">▶</span></summary>' +
       '<div class="tk-b">' + rows.map(function (x) { return '<div><span>' + x[0] + '</span><span>' + x[1] + '</span></div>'; }).join('') +
       '<div class="tk-boat"><span style="color:var(--mut)">Boot</span><select data-tkboat="' + esc(r.row) + '" data-naam="' + esc(r.naam) + '">' + opt('', 'Nog niet ingedeeld', r.boot || '') + opt('ZAZA', 'ZAZA', r.boot === 'ZAZA' ? 'ZAZA' : '') + opt('Mosi Jo', 'Mosi Jo', /mosi/i.test(r.boot || '') ? 'Mosi Jo' : '') + '</select></div>' +
-      (tel || r.email ? '<div class="tk-act">' + (tel ? '<a href="tel:+' + esc(tel) + '">Bellen</a><a class="wa" target="_blank" rel="noopener" href="' + esc(waTicket(r, tel, en)) + '">WhatsApp</a>' : '') + (r.email ? '<a href="' + esc(mailTicket(r, en)) + '">E-mail</a>' : '') + '</div>' : '') +
+      (tel || r.email ? '<div class="tk-act">' + (tel ? '<a href="tel:+' + esc(tel) + '">Bellen</a><a class="wa" target="_blank" rel="noopener" href="' + esc(waTicket(r, tel, en)) + '">WhatsApp</a>' : '') + (r.email ? '<a target="_blank" rel="noopener" href="' + esc(mailTicket(r, en)) + '">E-mail</a>' : '') + '</div>' : '') +
       '</div></details>';
   }
   function ticketList(a) {
