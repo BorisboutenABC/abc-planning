@@ -431,6 +431,7 @@ body{padding-top:env(safe-area-inset-top)}
   var BOAT = {
     zaza: { label: 'Zaza', short: 'Zaza', dot: '#1F5E63', bg: '#E3EFEF', chip: ['#DCEDED', '#133E42'], box: ['#E4F0F0', '#133E42', '#2E4F52'], info: 'tot ca. 30 pers · overdekt' },
     mosi: { label: 'Mosi Jo', short: 'Mosi Jo', dot: '#C2662D', bg: '#F8E6D8', chip: ['#F6E0CF', '#6E3511'], box: ['#F8E6D8', '#6E3511', '#6E3511'], info: 'tot ca. 35 pers · overdekt' },
+    ext: { label: 'Huurboot', short: 'Huur', dot: '#7A6E5D', bg: '#EFEAE2', chip: ['#EAE3D8', '#4A4137'], box: ['#EFEAE2', '#4A4137', '#4A4137'], info: 'ingehuurde boot' },
     none: { label: 'Nog kiezen', short: 'Boot?', dot: '#9C9184', bg: '#F1ECE4', chip: ['#EFE8DD', '#5A5146'] },
     alf: { label: 'Light Festival', short: 'ALF', dot: '#5A63B8', bg: '#E9EAF8', chip: ['#E9EAF8', '#2E3A86'] }
   };
@@ -529,7 +530,7 @@ body{padding-top:env(safe-area-inset-top)}
   function prep(d) {
     var T = todayIso();
     var trips = (d.trips || []).filter(function (t) { return t.kind === 'trip'; }).map(function (t) {
-      var o = {}; for (var k in t) o[k] = t[k]; o.conflictWith = []; return o;
+      var o = {}; for (var k in t) o[k] = t[k]; o.conflictWith = []; if (!o.boat && String(o.boatRaw || '').trim()) o.boat = 'ext'; return o;
     });
     var groups = {}, conflicts = [];
     trips.forEach(function (t) {
@@ -1214,7 +1215,7 @@ body{padding-top:env(safe-area-inset-top)}
       return {
         datum: t.date, start: t.start, end: t.end, naam: t.naamRaw, tel: t.phone ? '+' + t.phone : '', pax: t.pax || '',
         drank: t.drankRaw, hapjes: t.hapjes, opstap: t.opstap, afstap: t.afstap,
-        boot: /zaza/i.test(t.boatRaw) ? 'ZAZA' : (/mosi/i.test(t.boatRaw) ? 'Mosi Jo' : ''),
+        boot: /zaza/i.test(t.boatRaw) ? 'ZAZA' : (/mosi/i.test(t.boatRaw) ? 'Mosi Jo' : String(t.boatRaw || '').trim()),
         schipper: t.schipper, host: t.host || '', status: /^\s*optie\b/i.test(t.notes) ? 'Optie' : 'Bevestigd',
         notes: t.notes.replace(/^OPTIE\s*·?\s*/i, ''), en: /\bEN\b/.test(t.klantRaw), betaald: !!t.paid
       };
@@ -1263,7 +1264,7 @@ body{padding-top:env(safe-area-inset-top)}
       '<label class="' + h + '"><span>Hapjes</span><input type="text" name="hapjes" list="dl-hap" placeholder="—" value="' + esc(v.hapjes) + '"></label>' +
       locField('opstap', 'Opstap', v.opstap, h) +
       locField('afstap', 'Afstap', v.afstap, h) +
-      '<label class="' + h + '"><span>Boot</span><select name="boot">' + opt('', 'Nog kiezen', v.boot) + opt('ZAZA', 'Zaza', v.boot) + opt('Mosi Jo', 'Mosi Jo', v.boot) + '</select></label>' +
+      '<label class="' + h + '"><span>Boot</span><select name="boot">' + opt('', 'Nog kiezen', v.boot) + opt('ZAZA', 'Zaza', v.boot) + opt('Mosi Jo', 'Mosi Jo', v.boot) + (v.boot && !/zaza|mosi/i.test(v.boot) && v.boot !== 'Henk Bootcafé' ? opt(v.boot, v.boot + ' (huur)', v.boot) : '') + opt('Henk Bootcafé', 'Henk Bootcafé (huur)', v.boot) + '</select></label>' +
       '<label class="' + h + '"><span>Schipper</span><select name="schipper">' + opt('', 'Nog indelen', v.schipper) + sk.map(function (n) { return opt(n, n, (v.schipper || '').toLowerCase() === n.toLowerCase() ? n : ''); }).join('') + '</select></label>' +
       '<label class="' + h + '"><span>Host</span><select name="host">' + opt('', 'Geen host', v.host || '') + hs.map(function (n) { return opt(n, n, (v.host || '').toLowerCase() === n.toLowerCase() ? n : ''); }).join('') + '</select></label>' +
       '<label class="w"><span>Status</span><select name="status">' + opt('Bevestigd', 'Bevestigd', v.status) + opt('Optie', 'Optie', v.status) + '</select></label>' +
@@ -1506,7 +1507,7 @@ body{padding-top:env(safe-area-inset-top)}
   function bkey(b) { b = String(b || '').toLowerCase(); return /zaza/.test(b) ? 'zaza' : (/mosi/.test(b) ? 'mosi' : ''); }
   function seasonCheck(d) {
     var T = todayIso(), P = prep(d), out = [];
-    var trips = P.trips.filter(function (t) { return t.date >= T && t.startMin != null; });
+    var trips = P.trips.filter(function (t) { return t.date >= T && t.startMin != null && t.boat !== 'ext'; }); // huurboot: geen eigen boot nodig
     P.alfs.forEach(function (a) {
       if (a.date < T || a.startMin == null || a.id.indexOf('alf:') !== 0) return;
       var aEnd = a.endMin != null ? a.endMin : a.startMin + 75;
@@ -1709,10 +1710,10 @@ body{padding-top:env(safe-area-inset-top)}
     var pos = function (m) { return Math.max(0, Math.min(100, (m - h0 * 60) / span * 100)); };
     var axis = '';
     for (var h = h0; h <= h1; h++) axis += '<span style="left:' + pos(h * 60) + '%">' + p2(h) + ':00</span>';
-    var lanes = [['zaza', 'Zaza'], ['mosi', 'Mosi Jo'], ['none', 'Boot?'], ['alf', 'Light Fest.']];
+    var lanes = [['zaza', 'Zaza'], ['mosi', 'Mosi Jo'], ['ext', 'Huurboot'], ['none', 'Boot?'], ['alf', 'Light Fest.']];
     var rows = lanes.map(function (ln) {
       var its = items.filter(function (x) { return bk(x) === ln[0] && x.startMin != null; });
-      if (!its.length && (ln[0] === 'none' || ln[0] === 'alf')) return '';
+      if (!its.length && (ln[0] === 'none' || ln[0] === 'alf' || ln[0] === 'ext')) return '';
       var B = BOAT[ln[0]];
       return '<div class="tl-row"><div class="tl-lab"><span class="dt" style="background:' + B.dot + '"></span>' + ln[1] + '</div><div class="tl-track">' +
         its.map(function (x) {
@@ -1882,7 +1883,7 @@ body{padding-top:env(safe-area-inset-top)}
   }
 
   /* ---------- render ---------- */
-  var APP_VERSION = '37';
+  var APP_VERSION = '38';
   var SWIPE_IN = '', SWIPE_DAY = '';
   var PAYING = null;
   function setPaidLocal(id, val) {
