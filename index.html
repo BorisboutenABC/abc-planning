@@ -645,14 +645,16 @@ body{padding-top:env(safe-area-inset-top)}
     }
     return 'https://wa.me/' + t.phone + '?text=' + encodeURIComponent(msg);
   }
+  var HOST_TIPS = 'Zorg dat je een uur van tevoren aanwezig bent.\nLoop de checklist goed na en overleg met de schipper wie wat doet.\nKleed je warm aan en trek daaroverheen de blauwe jas met het ABC-logo.';
   function waSchipper(t, role) {
     var sk = ((role === 'host' ? t.host : t.schipper) || '').trim(), N = '\n';
     var klant = t.klantRaw.replace(PHONE_G, '').trim() + (t.phone ? ' +' + t.phone : '');
-    var msg = (sk ? 'Hey ' + proper(sk) : 'Hey') + ', hierbij de gegevens voor je tocht:' + N + N +
+    var msg = (sk ? 'Hey ' + proper(role === 'host' ? first(sk) : sk) : 'Hey') + ', hierbij de gegevens voor je tocht' + (role === 'host' ? ' als host:' : ':') + N + N +
       '*Datum:* ' + dagNaam(t) + ' ' + ddmmyyyy(t.date) + N + '*Tijd:* ' + t.tijd + N + '*Opstap:* ' + t.opstap + N + '*Afstap:* ' + t.afstap + N +
       '*Boot:* ' + t.boatRaw + N + '*Klant:* ' + klant + N + '*Taal klant:* ' + (t.en ? 'Engels' : 'Nederlands') + N + '*Pax:* ' + (t.pax || '') + N + '*Drank:* ' + t.drankRaw + N + '*Hapjes:* ' + t.hapjes + N +
+      (role === 'host' ? '*Schipper:* ' + (t.schipper ? proper(t.schipper.trim()) + (skTel(t.schipper) ? ' +' + skTel(t.schipper) : '') : 'nog niet ingedeeld') + N : '') +
       '*Bijzonderheden:* ' + t.notes + N + N +
-      'Graag 10 minuten van tevoren op de opstaplocatie zijn, zodat je op tijd kunt vertrekken.' + N + N +
+      (role === 'host' ? HOST_TIPS + N + N : 'Graag 10 minuten van tevoren op de opstaplocatie zijn, zodat je op tijd kunt vertrekken.' + N + N) +
       'Na afloop de boot graag schoon en leeg achterlaten en de bar weer aanvullen, zodat alles klaar is voor de volgende groep.' + N + N +
       '*Waterstand op de dag zelf:* ' + WATER_URL + N + N +
       'Bij vragen kun je ons altijd even een berichtje sturen. Fijne tocht!';
@@ -1080,7 +1082,7 @@ body{padding-top:env(safe-area-inset-top)}
           res({
             pdf: new File([pdf.output('blob')], base + '.pdf', { type: 'application/pdf' }),
             png: new File([png], base + '.png', { type: 'image/png' }),
-            text: (sk ? 'Hey ' + proper(sk) + ', hierbij' : 'Hierbij') + ' de vaarkaart voor ' + longDate(t.date).toLowerCase() + '.\nWaterstand op de dag zelf: ' + WATER_URL,
+            text: (sk ? 'Hey ' + proper(sk) + ', hierbij' : 'Hierbij') + ' de vaarkaart voor ' + longDate(t.date).toLowerCase() + '.' + (role === 'host' ? '\n\n' + HOST_TIPS + '\n' : '') + '\nWaterstand op de dag zelf: ' + WATER_URL,
             tel: sk ? crewTel(role, sk) : ''
           });
         }, 'image/png');
