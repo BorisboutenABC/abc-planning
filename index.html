@@ -1373,8 +1373,36 @@ body{padding-top:env(safe-area-inset-top)}
     var c = k ? PLAT[k] : ['#EFE8DD', '#4A433A', p || '?'];
     return chip(k ? c[2] : (p || '?'), c);
   }
+  function waTicket(r, tel, en) {
+    var N = '\n', vn = r.naam ? ' ' + proper(String(r.naam).trim().split(/\s+/)[0]) : '';
+    var afw = (r.opstap || '').trim(), link = locLink(afw || 'Central Station');
+    var dt = r.date ? (en ? EN_DOW : NL_DOW)[dow(r.date)] + ' ' + ddmmyyyy(r.date) : (r.datum || '');
+    var tijd = r.shift || r.start || '', boot = (r.boot || '').trim(), msg;
+    if (!en) {
+      msg = 'Goedendag' + vn + ', wat fijn dat je hebt geboekt bij Amsterdam Boat Company! Hierbij de gegevens voor jullie Light Festival rondvaart:' + N + N +
+        '*Datum:* ' + dt + N + '*Tijd:* ' + tijd + N + '*Duur:* 75 minuten' + N + '*Aantal personen:* ' + (r.pax || '') +
+        (boot ? N + '*Boot:* ' + boot : '') + N +
+        '*Opstap:* ' + (afw || 'Stationsplein (Centraal Station)' + N + '*Herkenningspunt:* kijk naar vlag nummer 4, daar liggen wij') +
+        (link.indexOf('http') === 0 ? N + '*Route naar de opstap:* ' + link : '') + N + N +
+        'Zorg dat je 10 minuten van tevoren aanwezig bent. Wacht op de boot, die komt altijd.' + N + N +
+        'We hebben een wc aan boord, maar ga van tevoren nog even naar de wc.' + N + N +
+        'Mocht je te laat zijn, laat het ons dan even weten via dit nummer. We kunnen maximaal 5 minuten wachten.' + N + N +
+        'Heel veel plezier gewenst!';
+    } else {
+      msg = 'Hello' + vn + ', great that you booked with Amsterdam Boat Company! Here are the details for your Light Festival cruise:' + N + N +
+        '*Date:* ' + dt + N + '*Time:* ' + tijd + N + '*Duration:* 75 minutes' + N + '*Guests:* ' + (r.pax || '') +
+        (boot ? N + '*Boat:* ' + boot : '') + N +
+        '*Boarding point:* ' + (afw || 'Stationsplein (Amsterdam Central Station)' + N + '*Look for:* flag number 4, that is where we are moored') +
+        (link.indexOf('http') === 0 ? N + '*Directions to the boarding point:* ' + link : '') + N + N +
+        'Please make sure you are there 10 minutes before departure. Just wait for the boat, it always comes.' + N + N +
+        'There is a toilet on board, but we recommend using the restroom before you board.' + N + N +
+        'Running late? Please let us know via this number. We can wait a maximum of 5 minutes.' + N + N +
+        'Have a wonderful time!';
+    }
+    return 'https://wa.me/' + tel + '?text=' + encodeURIComponent(msg);
+  }
   function ticketRow(r) {
-    var tel = waNum(r.telefoon), en = /EN/.test(r.whatsapp || '');
+    var tel = waNum(r.telefoon), en = /EN/.test(r.whatsapp || '') || (!!tel && tel.indexOf('31') !== 0);
     var rows = [
       ['Telefoon', r.telefoon ? '<a href="tel:+' + esc(tel) + '">' + esc(r.telefoon) + '</a>' : '—'],
       ['Geboekt via', esc(r.platform || '—')],
@@ -1390,7 +1418,7 @@ body{padding-top:env(safe-area-inset-top)}
     return '<details class="tkr" data-tk="' + esc(key) + '"' + (TK_OPEN[key] ? ' open' : '') + '><summary><span class="n">' + (aan ? '<span style="color:#2E7D4F" title="Aan boord">✓ </span>' : '') + esc(r.naam) + '</span><span class="p">' + esc(r.pax || '?') + ' pax</span>' + platChip(r.platform) + '<span class="ar">▶</span></summary>' +
       '<div class="tk-b">' + rows.map(function (x) { return '<div><span>' + x[0] + '</span><span>' + x[1] + '</span></div>'; }).join('') +
       '<div class="tk-boat"><span style="color:var(--mut)">Boot</span><select data-tkboat="' + esc(r.row) + '" data-naam="' + esc(r.naam) + '">' + opt('', 'Nog niet ingedeeld', r.boot || '') + opt('ZAZA', 'ZAZA', r.boot === 'ZAZA' ? 'ZAZA' : '') + opt('Mosi Jo', 'Mosi Jo', /mosi/i.test(r.boot || '') ? 'Mosi Jo' : '') + '</select></div>' +
-      (tel ? '<div class="tk-act"><a href="tel:+' + esc(tel) + '">Bellen</a><a class="wa" target="_blank" rel="noopener" href="https://wa.me/' + esc(tel) + '">WhatsApp</a></div>' : '') +
+      (tel ? '<div class="tk-act"><a href="tel:+' + esc(tel) + '">Bellen</a><a class="wa" target="_blank" rel="noopener" href="' + esc(waTicket(r, tel, en)) + '">WhatsApp</a></div>' : '') +
       '</div></details>';
   }
   function ticketList(a) {
