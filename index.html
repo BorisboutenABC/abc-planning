@@ -634,6 +634,7 @@ body{padding-top:env(safe-area-inset-top)}
         '*Datum:* ' + dagNaam(t) + ' ' + ddmmyyyy(t.date) + N + '*Tijd:* ' + t.tijd + N + '*Opstap:* ' + t.opstap + N + '*Afstap:* ' + t.afstap + N +
         '*Boot:* ' + t.boatRaw + N + '*Schipper:* ' + s + N + '*Pax:* ' + (t.pax || '') + N + '*Drank:* ' + t.drankRaw + N + '*Hapjes:* ' + t.hapjes +
         (opl.indexOf('http') === 0 ? N + '*Route naar de opstap:* ' + opl : '') + N + N +
+        (/mosi/i.test(t.boatRaw || '') ? 'Goed om te weten: de Mosi Jo heeft een klein toiletje aan boord, dus het is altijd handig om van tevoren nog even naar het toilet te gaan.' + N + N : '') +
         'Zijn er op de dag zelf vragen? Dan kun je de schipper direct bereiken op het nummer hierboven.' + N + N + 'Alvast een hele fijne tocht gewenst!';
     } else {
       var dr = t.drankRaw === 'incl drank' ? 'included' : (t.drankRaw === 'eigen drank' ? 'bring your own' : t.drankRaw);
@@ -641,6 +642,7 @@ body{padding-top:env(safe-area-inset-top)}
         '*Date:* ' + EN_DOW[dow(t.date)] + ' ' + ddmmyyyy(t.date) + N + '*Time:* ' + t.tijd + N + '*Boarding:* ' + t.opstap + N + '*Drop-off:* ' + t.afstap + N +
         '*Boat:* ' + t.boatRaw + N + '*Skipper:* ' + s + N + '*Guests:* ' + (t.pax || '') + N + '*Drinks:* ' + dr + N + '*Snacks:* ' + t.hapjes +
         (opl.indexOf('http') === 0 ? N + '*Directions to the boarding point:* ' + opl : '') + N + N +
+        (/mosi/i.test(t.boatRaw || '') ? 'Good to know: the Mosi Jo has a small toilet on board, so it is always handy to use the restroom before you board.' + N + N : '') +
         'Any questions on the day? You can reach your skipper directly on the number above.' + N + N + 'We wish you a wonderful trip!';
     }
     return 'https://wa.me/' + t.phone + '?text=' + encodeURIComponent(msg);
@@ -1392,7 +1394,7 @@ body{padding-top:env(safe-area-inset-top)}
         '*Opstap:* ' + (afw || 'Stationsplein (Centraal Station)' + N + '*Herkenningspunt:* kijk naar vlag nummer 4, daar liggen wij') +
         (link.indexOf('http') === 0 ? N + '*Route naar de opstap:* ' + link : '') + N + N +
         'Zorg dat je 10 minuten van tevoren aanwezig bent. Wacht op de boot, die komt altijd.' + N + N +
-        'We hebben een wc aan boord, maar ga van tevoren nog even naar de wc.' + N + N +
+        (/mosi/i.test(boot) ? 'De Mosi Jo heeft een klein toiletje aan boord, dus het is altijd handig om van tevoren nog even naar het toilet te gaan.' : 'We hebben een wc aan boord, maar ga van tevoren nog even naar de wc.') + N + N +
         (geenDrank ? 'Jullie hebben geboekt zonder drankjes. Aan boord kun je drankjes kopen: fris € 3,50 en alcohol € 4,50. Betalen kan cash of met de kaart.' + N + N : '') +
         'Mocht je te laat zijn, laat het ons dan even weten via dit nummer. We kunnen maximaal 5 minuten wachten.' + N + N +
         'Heel veel plezier gewenst!';
@@ -1403,7 +1405,7 @@ body{padding-top:env(safe-area-inset-top)}
       '*Boarding point:* ' + (afw || 'Stationsplein (Amsterdam Central Station)' + N + '*Look for:* flag number 4, that is where we are moored') +
       (link.indexOf('http') === 0 ? N + '*Directions to the boarding point:* ' + link : '') + N + N +
       'Please make sure you are there 10 minutes before departure. Just wait for the boat, it always comes.' + N + N +
-      'There is a toilet on board, but we recommend using the restroom before you board.' + N + N +
+      (/mosi/i.test(boot) ? 'The Mosi Jo has a small toilet on board, so it is always handy to use the restroom before you board.' : 'There is a toilet on board, but we recommend using the restroom before you board.') + N + N +
       (geenDrank ? 'You booked without drinks. Drinks can be bought on board: soft drinks € 3.50 and alcoholic drinks € 4.50. You can pay cash or by card.' + N + N : '') +
       'Running late? Please let us know via this number. We can wait a maximum of 5 minutes.' + N + N +
       'Have a wonderful time!';
