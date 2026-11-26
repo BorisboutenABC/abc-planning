@@ -946,6 +946,7 @@ body{padding-top:env(safe-area-inset-top)}
     y += 140;
     // waterstand: één keer bovenaan; bij een latere datum de huidige stand met meetmoment
     // waterstand: klikbare link naar GrachtAlert (actueel op de dag zelf)
+    if (role !== 'host') {
     c.font = '700 32px ' + IT;
     var wlab = 'Check hier de waterstand  ›', wlw = c.measureText(wlab).width;
     rrect(c, M, y, W - 2 * M, 92, 26, '#E1EBF6');
@@ -955,6 +956,7 @@ body{padding-top:env(safe-area-inset-top)}
     c.fillStyle = '#5A7FA8'; c.font = '500 24px ' + IT; c.textAlign = 'right'; c.fillText('grachtalert.nl', W - M - 28, y + 56); c.textAlign = 'left';
     links.push({ x: M, y: y, w: W - 2 * M, h: 92, url: WATER_URL });
     y += 92 + 28;
+    }
 
     list.forEach(function (t) {
       var A = t.kind === 'alfcard';
@@ -1041,7 +1043,9 @@ body{padding-top:env(safe-area-inset-top)}
     });
 
     // afspraken
-    var tips = ['Graag 10 minuten voor vertrek op de opstaplocatie.', 'Na afloop de boot schoon en leeg achterlaten en de bar aanvullen.'];
+    var tips = role === 'host'
+      ? HOST_TIPS.split('\n').concat(['Na afloop de boot schoon en leeg achterlaten en de bar aanvullen.', 'Zorg na afloop dat alles weer in de lader zit.'])
+      : ['Graag 10 minuten voor vertrek op de opstaplocatie.', 'Na afloop de boot schoon en leeg achterlaten en de bar aanvullen.'];
     c.font = '500 30px ' + IT;
     var tl = []; tips.forEach(function (tp) { wrapText(c, tp, CW - 70).forEach(function (ln, j) { tl.push([ln, j === 0]); }); });
     var fh = 40 + tl.length * 42 + 30 + 52 + 34;
